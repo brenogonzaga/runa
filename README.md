@@ -5,6 +5,7 @@
 A minimalist, offline-first markdown note-taking app for macOS, Windows, Linux, iOS, and Android. Built with Tauri v2 and React.
 
 ![macOS](https://img.shields.io/badge/platform-macOS-lightgrey) ![Windows](https://img.shields.io/badge/platform-Windows-blue) ![Linux](https://img.shields.io/badge/platform-Linux-orange) ![iOS](https://img.shields.io/badge/platform-iOS-lightgrey) ![Android](https://img.shields.io/badge/platform-Android-green)
+
 ![License](https://img.shields.io/badge/license-MIT-green) ![GitHub issues](https://img.shields.io/github/issues/brenogonzaga/runa) ![GitHub stars](https://img.shields.io/github/stars/brenogonzaga/runa)
 
 [Website](https://www.brenogonzaga.com/runa) · [Releases](https://github.com/brenogonzaga/runa/releases)
