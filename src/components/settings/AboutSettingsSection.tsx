@@ -99,7 +99,6 @@ export function AboutSettingsSection() {
           >
             {t("about.authorName")}
           </button>{" "}
-          {t("about.withMoralSupport")}
         </p>
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2">
           <Button
