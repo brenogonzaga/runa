@@ -71,7 +71,7 @@
     },
     "plugins": {
         "updater": {
-            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE3RTQ2NTA4QzJGODdFRTYKUldUbWZ2akNDR1hrcDlud3VQSVhuYVU0cDk5V0RkaVFuVElRSGRVMjlFam9IdFVCNnU1ZlVJOXEK",
+            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI5MzZDNkMzNzAwQ0ZCNkIKUldScit3eHd3OFkyS1RVa0UwcDNwL1FUWmJWUllUeGErQnlrazZVelRwM3JKb3g2WitwQ3Fmb1kK",
             "endpoints": [
                 "https://github.com/brenogonzaga/runa/releases/latest/download/latest.json"
             ]
