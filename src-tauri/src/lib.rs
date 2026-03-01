@@ -32,7 +32,7 @@ use types::Settings;
 #[cfg(desktop)]
 use std::sync::Arc;
 
-#[cfg(desktop)]
+#[cfg(target_os = "macos")]
 use utils::is_markdown_extension;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
