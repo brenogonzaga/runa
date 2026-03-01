@@ -1,0 +1,168 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useNotes } from "../../context/NotesContext";
+import { NoteList } from "../notes/NoteList";
+import { Footer } from "./Footer";
+import { IconButton, Input } from "../ui";
+import { PlusIcon, XIcon, SearchIcon, SearchOffIcon } from "../icons";
+import { mod, shift, isMac } from "../../lib/platform";
+
+interface SidebarProps {
+  onOpenSettings?: () => void;
+  onNoteClick?: () => void;
+}
+
+export function Sidebar({ onOpenSettings, onNoteClick }: SidebarProps) {
+  const { t } = useTranslation();
+  const { createNote, notes, search, searchQuery, clearSearch } = useNotes();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [inputValue, setInputValue] = useState(searchQuery);
+  const debounceRef = useRef<number | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync input with search query
+  useEffect(() => {
+    setInputValue(searchQuery);
+  }, [searchQuery]);
+
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setInputValue(value);
+
+      // Debounce search
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+
+      debounceRef.current = window.setTimeout(() => {
+        search(value);
+      }, 220);
+    },
+    [search],
+  );
+
+  const toggleSearch = useCallback(() => {
+    setSearchOpen((prev) => !prev);
+  }, []);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setInputValue("");
+    clearSearch();
+  }, [clearSearch]);
+
+  // Auto-focus search input when opened
+  useEffect(() => {
+    if (searchOpen) {
+      // Small delay to ensure the input is rendered
+      requestAnimationFrame(() => {
+        searchInputRef.current?.focus();
+      });
+    }
+  }, [searchOpen]);
+
+  // Global shortcut hook: open and focus sidebar search
+  useEffect(() => {
+    const handleOpenSidebarSearch = () => {
+      setSearchOpen(true);
+      requestAnimationFrame(() => {
+        searchInputRef.current?.focus();
+      });
+    };
+
+    window.addEventListener("open-sidebar-search", handleOpenSidebarSearch);
+    return () => window.removeEventListener("open-sidebar-search", handleOpenSidebarSearch);
+  }, []);
+
+  const handleSearchKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        if (inputValue) {
+          // First escape: clear search
+          setInputValue("");
+          clearSearch();
+        } else {
+          // Second escape: close search
+          closeSearch();
+        }
+      }
+    },
+    [inputValue, clearSearch, closeSearch],
+  );
+
+  const handleClearSearch = useCallback(() => {
+    setInputValue("");
+    clearSearch();
+  }, [clearSearch]);
+
+  return (
+    <div className="w-full h-full bg-bg-secondary md:border-r border-border flex flex-col select-none">
+      {/* Drag region: macOS traffic-light space on desktop, safe-area inset only on mobile */}
+      <div className="hidden md:block h-11 shrink-0" data-tauri-drag-region></div>
+      <div className="md:hidden pt-safe shrink-0" data-tauri-drag-region></div>
+      <div className="flex items-center justify-between pl-4 pr-3 pb-2 border-b border-border shrink-0">
+        <div className="flex items-center gap-1">
+          <div className="font-medium text-base hidden sm:block">{t("common.notes")}</div>
+          <div className="text-text-muted font-medium text-2xs min-w-4.75 h-4.75 flex items-center justify-center px-1 bg-bg-muted rounded-sm mt-0.5 pt-px">
+            {notes.length}
+          </div>
+        </div>
+        <div className="flex items-center gap-px">
+          <IconButton
+            onClick={toggleSearch}
+            title={`${t("tooltips.searchNotes")} (${mod}${isMac ? "" : "+"}${shift}${isMac ? "" : "+"}F)`}
+          >
+            {searchOpen ? (
+              <SearchOffIcon className="w-4.25 h-4.25 stroke-[1.5]" />
+            ) : (
+              <SearchIcon className="w-4.25 h-4.25 stroke-[1.5]" />
+            )}
+          </IconButton>
+          <IconButton
+            variant="ghost"
+            onClick={createNote}
+            title={`${t("buttons.newNote")} (${mod}${isMac ? "" : "+"}N)`}
+          >
+            <PlusIcon className="w-5.25 h-5.25 stroke-[1.4]" />
+          </IconButton>
+        </div>
+      </div>
+      {/* Scrollable area with search and notes */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Search - sticky at top */}
+        {searchOpen && (
+          <div className="sticky top-0 z-10 px-2 pt-2 bg-bg-secondary">
+            <div className="relative">
+              <Input
+                ref={searchInputRef}
+                type="text"
+                value={inputValue}
+                onChange={handleSearchChange}
+                onKeyDown={handleSearchKeyDown}
+                placeholder={t("placeholders.searchNotes")}
+                className="h-9 pr-8 text-sm"
+              />
+              {inputValue && (
+                <button
+                  onClick={handleClearSearch}
+                  tabIndex={-1}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-text"
+                >
+                  <XIcon className="w-4.5 h-4.5 stroke-[1.5]" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Note list */}
+        <NoteList onNoteClick={onNoteClick} />
+      </div>
+
+      {/* Footer with git status, commit, and settings */}
+      <Footer onOpenSettings={onOpenSettings} />
+    </div>
+  );
+}

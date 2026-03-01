@@ -1,0 +1,30 @@
+{
+    "$schema": "../gen/schemas/mobile-schema.json",
+    "identifier": "mobile",
+    "description": "Capability for mobile app",
+    "platforms": [
+        "android",
+        "iOS"
+    ],
+    "windows": [
+        "main"
+    ],
+    "permissions": [
+        "core:default",
+        "core:window:allow-close",
+        "core:window:allow-set-focus",
+        "opener:default",
+        "opener:allow-open-url",
+        "fs:default",
+        "fs:allow-read",
+        "fs:allow-write",
+        "fs:allow-exists",
+        "fs:allow-mkdir",
+        "fs:allow-remove",
+        "fs:allow-rename",
+        "fs:allow-read-dir",
+        "dialog:default",
+        "clipboard-manager:allow-write-text",
+        "store:default"
+    ]
+}
