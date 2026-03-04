@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { NotesProvider, useNotes } from "./context/NotesContext";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { GitProvider } from "./context/GitContext";
-import { TooltipProvider, Toaster } from "./components/ui";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Editor } from "./components/editor/Editor";
 import type { Editor as TiptapEditor } from "@tiptap/react";
@@ -20,6 +19,8 @@ import { check as checkForUpdate, type Update } from "@tauri-apps/plugin-updater
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import * as aiService from "./services/ai";
 import type { AiProvider } from "./services/ai";
+import { Toaster } from "./components/ui/Toaster";
+import { TooltipProvider } from "./components/ui/Tooltip";
 
 // Detect preview mode from URL search params
 function getWindowMode(): {

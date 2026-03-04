@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { cn } from "../../lib/utils";
 import {
   ArrowLeftIcon,
   FolderIcon,
@@ -9,12 +10,13 @@ import {
   InfoIcon,
   ChevronDownIcon,
 } from "../icons";
-import { Button, IconButton } from "../ui";
+import { IconButton } from "../ui";
 import { GeneralSettingsSection } from "./GeneralSettingsSection";
 import { AppearanceSettingsSection } from "./EditorSettingsSection";
 import { ShortcutsSettingsSection } from "./ShortcutsSettingsSection";
 import { AboutSettingsSection } from "./AboutSettingsSection";
-import { mod, isMac } from "../../lib/platform";
+import { mod, isMac, isMacDesktop } from "../../lib/platform";
+import { Button } from "../ui/Button";
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -75,7 +77,10 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
       {/* ── Desktop sidebar (md+) ──────────────────────────────── */}
       <div className="hidden md:flex w-64 h-full bg-bg-secondary border-r border-border flex-col select-none">
         {/* Drag region */}
-        <div className="h-11 shrink-0" data-tauri-drag-region></div>
+        <div
+          className={`h-11 shrink-0 ${isMacDesktop ? "pl-22" : ""}`}
+          data-tauri-drag-region
+        ></div>
 
         {/* Header with back button and Settings title */}
         <div className="flex items-center justify-between px-3 pb-2 border-b border-border shrink-0">
@@ -116,7 +121,14 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
 
       {/* ── Mobile header with dropdown menu (< md) ─────────────────────── */}
       <div className="md:hidden shrink-0 bg-bg-secondary border-b border-border select-none pt-safe">
-        <div className="flex items-center justify-between px-3 min-h-12" data-tauri-drag-region>
+        <div
+          className={cn(
+            "flex items-center justify-between min-h-12",
+            isMacDesktop && "pl-22",
+            !isMacDesktop && "px-3",
+          )}
+          data-tauri-drag-region
+        >
           <div className="titlebar-no-drag flex items-center gap-1">
             <IconButton onClick={onBack} title={t("common.back")}>
               <ArrowLeftIcon className="w-4.5 h-4.5 stroke-[1.5]" />

@@ -1,8 +1,9 @@
 import { useEffect, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
-import { Input, IconButton } from "../ui";
+import {  IconButton } from "../ui";
 import { ArrowUpIcon, ArrowDownIcon, XIcon } from "../icons";
 import { shift } from "../../lib/platform";
+import { Input } from "../ui/Input";
 
 interface SearchToolbarProps {
   query: string;

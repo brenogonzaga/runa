@@ -4,8 +4,12 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { Menu, MenuItem, PredefinedMenuItem } from "@tauri-apps/api/menu";
 import { useNotes } from "../../context/NotesContext";
+import { ListItem } from "../ui";
+import { cleanTitle } from "../../lib/utils";
+import * as notesService from "../../services/notes";
+import type { Settings } from "../../types/note";
+import type { TFunction } from "i18next";
 import {
-  ListItem,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -14,11 +18,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../ui";
-import { cleanTitle } from "../../lib/utils";
-import * as notesService from "../../services/notes";
-import type { Settings } from "../../types/note";
-import type { TFunction } from "i18next";
+} from "../ui/AlertDialog";
 
 function formatDate(timestamp: number, t: TFunction): string {
   const date = new Date(timestamp * 1000);

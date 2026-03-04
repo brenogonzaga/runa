@@ -4,8 +4,8 @@ import { getVersion } from "@tauri-apps/api/app";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { showUpdateToast } from "../../App";
-import { Button } from "../ui";
 import { RefreshCwIcon, SpinnerIcon, GithubIcon } from "../icons";
+import { Button } from "../ui/Button";
 
 export function AboutSettingsSection() {
   const { t } = useTranslation();

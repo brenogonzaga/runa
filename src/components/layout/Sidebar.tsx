@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { cn } from "../../lib/utils";
 import { useNotes } from "../../context/NotesContext";
 import { NoteList } from "../notes/NoteList";
 import { Footer } from "./Footer";
-import { IconButton, Input } from "../ui";
-import { PlusIcon, XIcon, SearchIcon, SearchOffIcon } from "../icons";
-import { mod, shift, isMac } from "../../lib/platform";
+import { IconButton } from "../ui";
+import { PlusIcon, XIcon, SearchIcon, SearchOffIcon, RefreshCwIcon } from "../icons";
+import { mod, shift, isMac, isMacDesktop } from "../../lib/platform";
+import { usePullToRefresh } from "../../lib/usePullToRefresh";
+import { Input } from "../ui/Input";
 
 interface SidebarProps {
   onOpenSettings?: () => void;
@@ -19,6 +22,24 @@ export function Sidebar({ onOpenSettings, onNoteClick }: SidebarProps) {
   const [inputValue, setInputValue] = useState(searchQuery);
   const debounceRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Pull-to-refresh for mobile
+  const {
+    pullDistance,
+    isRefreshing,
+    isPulling,
+    willRefresh,
+    handlers: pullHandlers,
+  } = usePullToRefresh({
+    onRefresh: async () => {
+      // Refresh the current search or note list
+      if (searchQuery) {
+        await search(searchQuery);
+      }
+    },
+    threshold: 60,
+    maxPull: 100,
+  });
 
   // Sync input with search query
   useEffect(() => {
@@ -99,17 +120,21 @@ export function Sidebar({ onOpenSettings, onNoteClick }: SidebarProps) {
 
   return (
     <div className="w-full h-full bg-bg-secondary md:border-r border-border flex flex-col select-none">
-      {/* Drag region: macOS traffic-light space on desktop, safe-area inset only on mobile */}
-      <div className="hidden md:block h-11 shrink-0" data-tauri-drag-region></div>
-      <div className="md:hidden pt-safe shrink-0" data-tauri-drag-region></div>
-      <div className="flex items-center justify-between pl-4 pr-3 pb-2 border-b border-border shrink-0">
-        <div className="flex items-center gap-1">
+      {/* Drag region with header: macOS traffic-light space on desktop, safe-area inset on mobile */}
+      <div
+        className={cn(
+          "flex items-center justify-between pt-safe md:pt-0 min-h-12 md:h-11 pb-2 border-b border-border shrink-0",
+          isMacDesktop ? "pl-22 pr-3" : "pl-4 pr-3",
+        )}
+        data-tauri-drag-region
+      >
+        <div className="titlebar-no-drag flex items-center gap-1">
           <div className="font-medium text-base hidden sm:block">{t("common.notes")}</div>
           <div className="text-text-muted font-medium text-2xs min-w-4.75 h-4.75 flex items-center justify-center px-1 bg-bg-muted rounded-sm mt-0.5 pt-px">
             {notes.length}
           </div>
         </div>
-        <div className="flex items-center gap-px">
+        <div className="titlebar-no-drag flex items-center gap-px">
           <IconButton
             onClick={toggleSearch}
             title={`${t("tooltips.searchNotes")} (${mod}${isMac ? "" : "+"}${shift}${isMac ? "" : "+"}F)`}
@@ -130,7 +155,26 @@ export function Sidebar({ onOpenSettings, onNoteClick }: SidebarProps) {
         </div>
       </div>
       {/* Scrollable area with search and notes */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto relative" {...pullHandlers}>
+        {/* Pull-to-refresh indicator (mobile only) */}
+        {(isPulling || isRefreshing) && (
+          <div
+            className="md:hidden absolute top-0 left-0 right-0 flex items-center justify-center transition-all duration-200 ease-out"
+            style={{
+              height: `${Math.min(pullDistance, 60)}px`,
+              opacity: Math.min(pullDistance / 60, 1),
+            }}
+          >
+            <div
+              className={`w-5 h-5 ${isRefreshing || willRefresh ? "animate-spin" : ""}`}
+              style={{
+                transform: `rotate(${pullDistance * 2}deg)`,
+              }}
+            >
+              <RefreshCwIcon className="w-full h-full stroke-[1.5] text-text-muted" />
+            </div>
+          </div>
+        )}
         {/* Search - sticky at top */}
         {searchOpen && (
           <div className="sticky top-0 z-10 px-2 pt-2 bg-bg-secondary">

@@ -1,9 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../context/ThemeContext";
-import { Button, IconButton, Input, Select } from "../ui";
+import { IconButton } from "../ui";
 import type { FontFamily, TextDirection, EditorWidth } from "../../types/note";
 import { EyeIcon, MinusIcon, PlusIcon } from "../icons";
 import { languages } from "../../lib/i18n";
+import { Select } from "../ui/Select";
+import { Input } from "../ui/Input";
+import { Button } from "../ui/Button";
 
 // Text direction options
 const textDirectionOptions: { value: TextDirection; labelKey: string }[] = [

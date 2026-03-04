@@ -24,6 +24,7 @@ import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { join } from "@tauri-apps/api/path";
 import { toast } from "sonner";
 import { mod, alt, shift, isMac, isMacDesktop } from "../../lib/platform";
+import { useSwipeGesture } from "../../lib/useSwipeGesture";
 
 // Validate URL scheme for safe opening
 function isAllowedUrlScheme(url: string): boolean {
@@ -46,7 +47,7 @@ import { Wikilink, type WikilinkStorage } from "./Wikilink";
 import { WikilinkSuggestion } from "./WikilinkSuggestion";
 import { cn } from "../../lib/utils";
 import { plainTextFromMarkdown } from "../../lib/plainText";
-import { Button, IconButton, ToolbarButton, Tooltip } from "../ui";
+import { IconButton, ToolbarButton } from "../ui";
 import * as notesService from "../../services/notes";
 import { downloadPdf, downloadMarkdown } from "../../services/pdf";
 import type { Settings } from "../../types/note";
@@ -84,6 +85,8 @@ import {
   FolderPlusIcon,
   MoreHorizontalIcon,
 } from "../icons";
+import { Button } from "../ui/Button";
+import { Tooltip } from "../ui/Tooltip";
 
 function formatDateTime(timestamp: number): string {
   const date = new Date(timestamp * 1000);
@@ -475,6 +478,17 @@ export function Editor({
   notesRef.current = notes;
   const notesCtxRef = useRef(notesCtx);
   notesCtxRef.current = notesCtx;
+
+  // Mobile swipe gesture: swipe right to go back to notes list
+  const swipeHandlers = useSwipeGesture({
+    onSwipeRight: () => {
+      if (onMobileBack && window.innerWidth < 768) {
+        // Only trigger on mobile (< md breakpoint)
+        onMobileBack();
+      }
+    },
+    threshold: 80,
+  });
 
   // Keep ref in sync with current note ID
   currentNoteIdRef.current = currentNote?.id ?? null;
@@ -1436,7 +1450,11 @@ export function Editor({
       return (
         <div className="flex-1 flex flex-col bg-bg">
           <div
-            className="shrink-0 flex items-center px-3 pt-safe md:pt-0 md:h-11"
+            className={cn(
+              "shrink-0 flex items-center pt-safe md:pt-0 min-h-12 md:h-11",
+              isMacDesktop && "pl-22",
+              !isMacDesktop && "px-3",
+            )}
             data-tauri-drag-region
           >
             {onMobileBack && (
@@ -1463,7 +1481,11 @@ export function Editor({
       return (
         <div className="flex-1 flex flex-col bg-bg">
           <div
-            className="shrink-0 flex items-center px-3 pt-safe md:pt-0 md:h-11"
+            className={cn(
+              "shrink-0 flex items-center pt-safe md:pt-0 min-h-12 md:h-11",
+              isMacDesktop && "pl-22",
+              !isMacDesktop && "px-3",
+            )}
             data-tauri-drag-region
           >
             {onMobileBack && (
@@ -1490,7 +1512,11 @@ export function Editor({
       <div className="flex-1 flex flex-col bg-bg">
         {/* Drag region */}
         <div
-          className="shrink-0 flex items-center px-3 pt-safe md:pt-0 md:h-11"
+          className={cn(
+            "shrink-0 flex items-center pt-safe md:pt-0 min-h-12 md:h-11",
+            isMacDesktop && "pl-22",
+            !isMacDesktop && "px-3",
+          )}
           data-tauri-drag-region
         >
           {onMobileBack && (
@@ -1532,13 +1558,13 @@ export function Editor({
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-bg overflow-hidden">
+    <div className="flex-1 flex flex-col bg-bg overflow-hidden" {...swipeHandlers}>
       {/* Drag region with sidebar toggle, date and save status */}
       <div
         className={cn(
-          "shrink-0 flex items-center justify-between px-3 pt-safe md:pt-0 md:h-11",
-          isMacDesktop && !sidebarVisible && "md:pl-22",
-          isMacDesktop && focusMode && "md:pl-22",
+          "shrink-0 flex items-center justify-between pt-safe md:pt-0 min-h-12 md:h-11",
+          isMacDesktop && "pl-22",
+          !isMacDesktop && "px-3",
         )}
         data-tauri-drag-region
       >

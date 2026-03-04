@@ -3,9 +3,10 @@ import { useTranslation } from "react-i18next";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useNotes } from "../../context/NotesContext";
 import { useTheme } from "../../context/ThemeContext";
-import { Button } from "../ui";
 import { SpinnerIcon } from "../icons";
 import { isMobilePlatform } from "../../services/notes";
+import { isMacDesktop } from "../../lib/platform";
+import { Button } from "../ui/Button";
 
 export function FolderPicker() {
   const { t } = useTranslation();
@@ -39,7 +40,10 @@ export function FolderPicker() {
   if (isMobile === null || isMobile) {
     return (
       <div className="h-full flex flex-col bg-bg-secondary">
-        <div className="pt-safe md:pt-0 md:h-10 shrink-0" data-tauri-drag-region />
+        <div
+          className={`pt-safe md:pt-0 md:h-11 shrink-0 ${isMacDesktop ? "pl-22" : ""}`}
+          data-tauri-drag-region
+        />
         <div className="flex-1 flex items-center justify-center px-4">
           <div className="text-center p-4 sm:p-8 max-w-lg select-none">
             <SpinnerIcon className="w-8 h-8 mx-auto text-text-muted animate-spin mb-4" />
@@ -54,7 +58,10 @@ export function FolderPicker() {
   return (
     <div className="h-full flex flex-col bg-bg-secondary">
       {/* Draggable title bar area - safe area for mobile, fixed height for desktop */}
-      <div className="pt-safe md:pt-0 md:h-10 shrink-0" data-tauri-drag-region />
+      <div
+        className={`pt-safe md:pt-0 md:h-11 shrink-0 ${isMacDesktop ? "pl-22" : ""}`}
+        data-tauri-drag-region
+      />
 
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="text-center p-4 sm:p-8 max-w-lg select-none">

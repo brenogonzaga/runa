@@ -2,7 +2,7 @@ import { useCallback, memo, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useGit } from "../../context/GitContext";
-import { Button, IconButton, Tooltip } from "../ui";
+import {  IconButton } from "../ui";
 import {
   GitBranchIcon,
   GitBranchDeletedIcon,
@@ -14,6 +14,8 @@ import {
 import { cn } from "../../lib/utils";
 import { mod, isMac } from "../../lib/platform";
 import { isMobilePlatform } from "../../services/notes";
+import { Button } from "../ui/Button";
+import { Tooltip } from "../ui/Tooltip";
 
 interface FooterProps {
   onOpenSettings?: () => void;

@@ -17,17 +17,7 @@ import * as notesService from "../../services/notes";
 import { downloadPdf, downloadMarkdown } from "../../services/pdf";
 import type { Settings } from "../../types/note";
 import type { Editor } from "@tiptap/react";
-import {
-  CommandItem,
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../ui";
+import { CommandItem } from "../ui";
 import { cleanTitle } from "../../lib/utils";
 import { plainTextFromMarkdown } from "../../lib/plainText";
 import { duplicateNote } from "../../services/notes";
@@ -49,6 +39,7 @@ import {
 } from "../icons";
 import { mod, shift } from "../../lib/platform";
 import type { AiProvider } from "../../services/ai";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/AlertDialog";
 
 interface Command {
   id: string;

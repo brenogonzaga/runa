@@ -1,7 +1,8 @@
 import { useRef, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckIcon, XIcon, LinkOffIcon } from "../icons";
-import { Input, IconButton } from "../ui";
+import {IconButton } from "../ui";
+import { Input } from "../ui/Input";
 
 export interface LinkEditorProps {
   initialUrl: string;

@@ -5,8 +5,6 @@ import { toast } from "sonner";
 import { useNotes } from "../../context/NotesContext";
 import { useTheme } from "../../context/ThemeContext";
 import { useGit } from "../../context/GitContext";
-import { Button } from "../ui";
-import { Input } from "../ui";
 import {
   FolderIcon,
   FoldersIcon,
@@ -17,6 +15,8 @@ import {
 } from "../icons";
 import type { Settings } from "../../types/note";
 import { isMobilePlatform } from "../../services/notes";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
 
 // Format remote URL for display - extract user/repo from full URL
 function formatRemoteUrl(url: string | null): string {
