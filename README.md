@@ -1,96 +1,128 @@
-# Runa
+# Runa - Markdown Note-Taking App
 
-<img src="docs/app-icon.png" alt="Runa" width="256" height="256" style="border-radius: 22px; margin-bottom: 8px;">
+<img src="docs/app-icon.png" alt="Runa markdown note-taking app screenshot" width="200" height="200">
 
-A minimalist, offline-first markdown note-taking app for macOS, Windows, Linux, iOS, and Android. Built with Tauri v2 and React.
+Runa is an open-source markdown note-taking application built with Tauri for macOS, Windows, Linux, iOS, and Android. Your notes are stored as plain `.md` files on your computer—no cloud, no lock-in.
 
-![macOS](https://img.shields.io/badge/platform-macOS-lightgrey) ![Windows](https://img.shields.io/badge/platform-Windows-blue) ![Linux](https://img.shields.io/badge/platform-Linux-orange) ![iOS](https://img.shields.io/badge/platform-iOS-lightgrey) ![Android](https://img.shields.io/badge/platform-Android-green)
+Unlike Obsidian or Notion, Runa is lightweight (~20MB) and works completely offline. It combines a WYSIWYG editor with markdown editing, full-text search, wikilinks, and Git integration.
 
-![License](https://img.shields.io/badge/license-MIT-green) ![GitHub issues](https://img.shields.io/github/issues/brenogonzaga/runa) ![GitHub stars](https://img.shields.io/github/stars/brenogonzaga/runa)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues/brenogonzaga/runa)](https://github.com/brenogonzaga/runa/issues)
+[![GitHub stars](https://img.shields.io/github/stars/brenogonzaga/runa)](https://github.com/brenogonzaga/runa)
 
-[Website](https://www.brenogonzaga.com/runa) · [Releases](https://github.com/brenogonzaga/runa/releases)
+[Website](https://www.brenogonzaga.com/runa) · [Download](https://github.com/brenogonzaga/runa/releases)
+
+---
+
+**Quick links:** [Features](#features) · [Installation](#installation) · [Keyboard Shortcuts](#keyboard-shortcuts) · [FAQ](#faq) · [Contributing](#contributing)
+
+---
 
 ## Features
 
+### Core Editing
+
+- **WYSIWYG editor** - Rich text editing with TipTap that saves to markdown
+- **Markdown source mode** - Toggle between visual and raw markdown editing (`Cmd+Shift+M`)
+- **Wikilinks** - Type `[[` to link between notes with autocomplete suggestions
+- **Slash commands** - Type `/` for quick access to headings, lists, code blocks, tables
+- **Focus mode** - Hide sidebar and toolbar for distraction-free writing (`Cmd+Shift+Enter`)
+
+### Search & Organization
+
+- **Full-text search** - Powered by Tantivy (Rust's fastest search engine)
+- **Command palette** - Quick access to notes and commands (`Cmd+P`)
+- **File change detection** - Auto-reloads when external tools modify notes
+
+### Sync & Integration
+
 - **Offline-first** - No cloud, no account, no internet required
-- **Markdown-based** - Notes stored as plain `.md` files you own
-- **WYSIWYG editing** - Rich text editing powered by TipTap that saves as markdown
-- **Preview mode** - Open any `.md` file via drag-and-drop or "Open With" without a notes folder
-- **Markdown source mode** - Toggle to view and edit raw markdown (`Cmd+Shift+M`)
-- **Wikilinks** - Type `[[` to link between notes with autocomplete
-- **Slash commands** - Type `/` to quickly insert headings, lists, code blocks, and more
-- **Focus mode** - Distraction-free writing with animated sidebar/toolbar fade (`Cmd+Shift+Enter`)
-- **Full-text search** - Fast search powered by Tantivy with prefix matching fallback
-- **Edit with Claude Code or OpenAI Codex** - Use your local Claude Code CLI or Codex CLI to edit notes
-- **Works with other AI agents** - Detects external file changes with smart debouncing
-- **International** - English and Portuguese translations with system language detection
-- **Auto-update** - Built-in updater checks for new versions automatically
-- **Keyboard optimized** - Extensive shortcuts and a command palette (`Cmd+P`)
-- **Customizable** - Theme (light/dark/system), typography, page width, text direction (LTR/RTL), and interface zoom
-- **Git integration** - Optional version control with push/pull for multi-device sync
-- **Cross-platform** - Desktop (macOS, Windows, Linux) and Mobile (iOS, Android)
-- **Lightweight** - 5-10x smaller than Obsidian or Notion
+- **Git integration** - Version control with commit/push/pull for multi-device sync
+- **AI-friendly** - Works with Claude Code CLI, Cursor, Windsurf, and other AI coding tools
+- **Plain markdown files** - Notes stored as `.md` files you can edit anywhere
+
+### Platform & Customization
+
+- **Cross-platform** - macOS, Windows, Linux, iOS, Android
+- **Lightweight** - ~20MB install (vs 200MB+ for Obsidian/Electron apps)
+- **Multi-language** - English, Portuguese, Spanish, French, German, Japanese, Chinese
+- **Customizable** - Themes (light/dark), typography, page width, text direction, zoom
 
 ## Screenshot
 
-![Screenshot](docs/screenshot.png)
+![Runa app interface showing markdown editor with sidebar](docs/screenshot.png)
+
+## Use Cases
+
+Runa works well for:
+
+- Personal knowledge bases and digital gardens
+- Technical documentation and developer notes
+- Academic research and literature notes
+- Blog post drafts and creative writing
+- Code snippets and learning notes
+- Any workflow involving markdown files and version control
 
 ## Installation
 
 ### macOS
 
-**Homebrew (Recommended)**
+**Homebrew:**
 
 ```bash
 brew tap brenogonzaga/tap
 brew install --cask brenogonzaga/tap/runa
 ```
 
-**Manual Download**
+**Manual:**
 
-1. Download the latest `.dmg` from [Releases](https://github.com/brenogonzaga/runa/releases)
-2. Open the DMG and drag Runa to Applications
-3. Open Runa from Applications
+Download the `.dmg` from [Releases](https://github.com/brenogonzaga/runa/releases), open it, and drag Runa to Applications.
 
 ### Windows
 
-Download the latest `.exe` installer from [Releases](https://github.com/brenogonzaga/runa/releases) and run it. WebView2 will be downloaded automatically if needed.
+Download the `.exe` installer from [Releases](https://github.com/brenogonzaga/runa/releases) and run it. WebView2 will be downloaded automatically if needed.
 
 ### Linux
 
-Download the latest `.AppImage` or `.deb` from [Releases](https://github.com/brenogonzaga/runa/releases).
+**AppImage:**
 
-### iOS
+```bash
+wget https://github.com/brenogonzaga/runa/releases/latest/download/Runa.AppImage
+chmod +x Runa.AppImage
+./Runa.AppImage
+```
 
-Coming soon to TestFlight and App Store.
+**Debian/Ubuntu:**
 
-### Android
+```bash
+wget https://github.com/brenogonzaga/runa/releases/latest/download/runa_amd64.deb
+sudo dpkg -i runa_amd64.deb
+```
 
-Coming soon to Google Play.
+### Mobile
 
-### From Source
+- **iOS**: Coming soon
+- **Android**: Coming soon
 
-**Prerequisites:** Node.js 18+, Rust 1.70+
+## Building from Source
 
-**macOS:** Xcode Command Line Tools · **Windows:** WebView2 Runtime (pre-installed on Windows 11)
+**Prerequisites:** Node.js 18+, Rust 1.70+, and platform-specific tools:
 
-**iOS/Android:** Additional mobile development tools (Xcode, Android Studio)
+- macOS: Xcode Command Line Tools
+- Windows: WebView2 Runtime
+- Linux: `webkit2gtk`, `libayatana-appindicator3`
 
 ```bash
 git clone https://github.com/brenogonzaga/runa.git
 cd runa
 npm install
-npm run tauri dev      # Development (desktop)
-npm run tauri build    # Production build (desktop)
-
-# Mobile (requires iOS/Android dev environment)
-npm run tauri ios dev
-npm run tauri android dev
+npm run tauri dev      # Development
+npm run tauri build    # Production build
 ```
 
-## Keyboard Shortcuts
+For mobile builds, see [Tauri Mobile Docs](https://v2.tauri.app/develop/mobile/).
 
-Runa is designed to be usable without a mouse. Here are the essentials to get started:
+## Keyboard Shortcuts
 
 | Shortcut          | Action                 |
 | ----------------- | ---------------------- |
@@ -98,37 +130,66 @@ Runa is designed to be usable without a mouse. Here are the essentials to get st
 | `Cmd+P`           | Command palette        |
 | `Cmd+K`           | Add/edit link          |
 | `Cmd+F`           | Find in note           |
-| `Cmd+Shift+C`     | Copy & Export menu     |
+| `Cmd+Shift+F`     | Search notes           |
 | `Cmd+Shift+M`     | Toggle Markdown source |
 | `Cmd+Shift+Enter` | Toggle Focus mode      |
-| `Cmd+Shift+F`     | Search notes           |
+| `Cmd+Shift+C`     | Copy & Export menu     |
 | `Cmd+R`           | Reload current note    |
 | `Cmd+,`           | Open settings          |
-| `Cmd+1/2/3/4`     | Switch settings tabs   |
 | `Cmd+\`           | Toggle sidebar         |
 | `Cmd+B/I`         | Bold/Italic            |
 | `Cmd+=/-/0`       | Zoom in/out/reset      |
 | `↑/↓`             | Navigate notes         |
 
-**Note:** On Windows, use `Ctrl` instead of `Cmd` for all shortcuts.
+On Windows/Linux, use `Ctrl` instead of `Cmd`.
 
-Many more shortcuts and features are available in the app—explore via the command palette (`Cmd+P` / `Ctrl+P`) or view the full reference in Settings → Shortcuts.
+## FAQ
 
-## Built With
+**How is this different from Obsidian?**  
+Both use local markdown files, but Runa is 5-10x smaller (Tauri vs Electron) and simpler. Obsidian has a plugin ecosystem; Runa focuses on core features done well.
 
-[Tauri v2](https://v2.tauri.app/) · [React 19](https://react.dev/) · [TypeScript](https://www.typescriptlang.org/) · [TipTap](https://tiptap.dev/) · [Tailwind CSS v4](https://tailwindcss.com/) · [Tantivy](https://github.com/quickwit-oss/tantivy) · [i18next](https://www.i18next.com/)
+**Can I sync my notes across devices?**  
+Yes. Use Git (built-in), iCloud Drive, Dropbox, or any file sync service. Your notes are just files in a folder. You can sync them.
+
+**Will my notes work in other apps?**  
+Completely. Notes are standard `.md` files with no proprietary formatting. Use them in VS Code, Vim, Obsidian, or any text editor.
+
+**Does this work with AI coding assistants?**  
+Yes. Runa detects external file changes automatically, so it works great with Cursor, Windsurf, Claude Code CLI, and similar tools.
+
+## Technology Stack (Tauri, React, Rust)
+
+- [Tauri v2](https://v2.tauri.app/) - Cross-platform framework (Rust + WebView)
+- [React 19](https://react.dev/) - UI library
+- [TipTap](https://tiptap.dev/) - WYSIWYG markdown editor
+- [Tailwind CSS v4](https://tailwindcss.com/) - Styling
+- [Tantivy](https://github.com/quickwit-oss/tantivy) - Full-text search engine
+- [i18next](https://www.i18next.com/) - Internationalization
 
 ## Contributing
 
-Contributions and suggestions are welcome.
+Contributions are welcome. Runa focuses on a minimal feature set, so not every feature will be a fit.
 
-What makes Runa special is its minimal feature set and focus on user experience. We're not trying to build Obsidian or Notion, so not every feature will be a fit.
+**Small fixes** (typos, bugs, performance) - go ahead and open a PR.
 
-**Small fixes and improvements:** go ahead and open a PR, we'll try to merge these in regularly.
+**New features** - open an issue or discussion first.
 
-**Bigger changes:** if you're not sure whether a feature fits, open an issue first and ask.
+**Code quality**:
 
-**Review process:** I generally won't go back and forth with review comments. Try to address any CodeRabbit comments on your PR. From there, I'll make any additional changes directly.
+- Follow existing code style
+- Write meaningful commit messages
+- Test your changes
+- Address CI feedback
+
+For development setup, see [Building from Source](#building-from-source). Architecture details are in [CLAUDE.md](CLAUDE.md).
+
+**Translations**: Add a new language by copying `i18n/en.json` and submitting a PR.
+
+## About the Project
+
+Runa is designed for people who want a fast, private note-taking app without vendor lock-in. Your notes are just markdown files—you can move them anywhere, version control them with Git, or edit them with any text editor.
+
+The project is open-source (MIT license) and built with modern web technologies for native-like performance on all platforms.
 
 ## Acknowledgments
 
@@ -137,3 +198,15 @@ Runa is a fork of [Scratch](https://github.com/erictli/scratch) by [Eric Li](htt
 ## License
 
 MIT - See [LICENSE](LICENSE) for details.
+
+## Links
+
+- Website: [https://www.brenogonzaga.com/runa](https://www.brenogonzaga.com/runa)
+- Download Runa: [https://github.com/brenogonzaga/runa/releases](https://github.com/brenogonzaga/runa/releases)
+- Report issues: [https://github.com/brenogonzaga/runa/issues](https://github.com/brenogonzaga/runa/issues)
+- Community discussions: [https://github.com/brenogonzaga/runa/discussions](https://github.com/brenogonzaga/runa/discussions)
+- Source code: [https://github.com/brenogonzaga/runa](https://github.com/brenogonzaga/runa)
+
+---
+
+**Topics:** markdown editor, note-taking app, tauri, rust, react, wikilinks, obsidian alternative, offline-first, open-source, cross-platform, knowledge base, personal wiki, git integration
