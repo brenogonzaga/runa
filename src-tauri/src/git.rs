@@ -2,6 +2,19 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::process::Command;
 
+/// Create a `Command` for git that hides the console window on Windows.
+fn git_cmd() -> Command {
+    #[allow(unused_mut)]
+    let mut cmd = Command::new("git");
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    cmd
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct GitStatus {
@@ -26,7 +39,7 @@ pub struct GitResult {
 
 /// Check if git CLI is available
 pub fn is_available() -> bool {
-    Command::new("git")
+    git_cmd()
         .arg("--version")
         .output()
         .map(|o| o.status.success())
@@ -40,7 +53,7 @@ pub fn is_git_repo(path: &Path) -> bool {
 
 /// Initialize a git repository
 pub fn git_init(path: &Path) -> Result<(), String> {
-    let output = Command::new("git")
+    let output = git_cmd()
         .arg("init")
         .current_dir(path)
         .output()
@@ -67,7 +80,7 @@ pub fn get_status(path: &Path) -> GitStatus {
     };
 
     // Get current branch
-    if let Ok(output) = Command::new("git")
+    if let Ok(output) = git_cmd()
         .args(["branch", "--show-current"])
         .current_dir(path)
         .output()
@@ -81,11 +94,7 @@ pub fn get_status(path: &Path) -> GitStatus {
     }
 
     // Check for remote
-    if let Ok(output) = Command::new("git")
-        .args(["remote"])
-        .current_dir(path)
-        .output()
-    {
+    if let Ok(output) = git_cmd().args(["remote"]).current_dir(path).output() {
         status.has_remote =
             output.status.success() && !String::from_utf8_lossy(&output.stdout).trim().is_empty();
 
@@ -96,7 +105,7 @@ pub fn get_status(path: &Path) -> GitStatus {
     }
 
     // Get status with porcelain format for easy parsing
-    if let Ok(output) = Command::new("git")
+    if let Ok(output) = git_cmd()
         .args(["status", "--porcelain"])
         .current_dir(path)
         .output()
@@ -109,7 +118,7 @@ pub fn get_status(path: &Path) -> GitStatus {
 
     // Get ahead/behind count if we have a remote
     if status.has_remote && status.current_branch.is_some() {
-        match Command::new("git")
+        match git_cmd()
             .args(["rev-list", "--left-right", "--count", "@{upstream}...HEAD"])
             .current_dir(path)
             .output()
@@ -148,11 +157,7 @@ pub fn get_status(path: &Path) -> GitStatus {
 /// Stage all changes and commit
 pub fn commit_all(path: &Path, message: &str) -> GitResult {
     // Stage all changes
-    let stage_output = match Command::new("git")
-        .args(["add", "-A"])
-        .current_dir(path)
-        .output()
-    {
+    let stage_output = match git_cmd().args(["add", "-A"]).current_dir(path).output() {
         Ok(output) => output,
         Err(e) => {
             return GitResult {
@@ -183,7 +188,7 @@ pub fn commit_all(path: &Path, message: &str) -> GitResult {
     }
 
     // Commit
-    let commit_output = Command::new("git")
+    let commit_output = git_cmd()
         .args(["commit", "-m", message])
         .current_dir(path)
         .output();
@@ -353,7 +358,7 @@ pub fn get_remote_url(path: &Path) -> Option<String> {
         return None;
     }
 
-    Command::new("git")
+    git_cmd()
         .args(["remote", "get-url", "origin"])
         .current_dir(path)
         .output()
@@ -376,7 +381,7 @@ pub fn add_remote(path: &Path, url: &str) -> GitResult {
         };
     }
 
-    let output = Command::new("git")
+    let output = git_cmd()
         .args(["remote", "add", "origin", url])
         .current_dir(path)
         .output();
@@ -428,7 +433,7 @@ pub fn push_with_upstream(path: &Path, branch: &str) -> GitResult {
         };
     }
 
-    let output = Command::new("git")
+    let output = git_cmd()
         .args([
             "-c",
             "http.lowSpeedLimit=1000",

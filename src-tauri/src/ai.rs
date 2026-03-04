@@ -1,11 +1,25 @@
 use std::{
     path::PathBuf,
+    process::Command,
     sync::{Arc, Mutex},
 };
 
 use tauri::State;
 
 use crate::{state::AppState, types::AiExecutionResult};
+
+/// Create a `Command` that hides the console window on Windows.
+fn no_window_cmd(program: &str) -> Command {
+    #[allow(unused_mut)]
+    let mut cmd = Command::new(program);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    cmd
+}
 
 pub(crate) fn get_expanded_path() -> String {
     let system_path = std::env::var("PATH").unwrap_or_default();
@@ -50,15 +64,13 @@ pub(crate) fn get_expanded_path() -> String {
 }
 
 pub(crate) fn check_cli_exists(command_name: &str, path: &str) -> Result<bool, String> {
-    use std::process::Command;
-
     let which_cmd = if cfg!(target_os = "windows") {
         "where"
     } else {
         "which"
     };
 
-    let check_output = Command::new(which_cmd)
+    let check_output = no_window_cmd(which_cmd)
         .arg(command_name)
         .env("PATH", path)
         .output()
@@ -97,7 +109,7 @@ async fn execute_ai_cli(
     not_found_msg: String,
 ) -> Result<AiExecutionResult, String> {
     use std::io::Write;
-    use std::process::{Child, Command, Stdio};
+    use std::process::{Child, Stdio};
 
     let cli_name = cli_name.to_string();
     let timeout_duration = std::time::Duration::from_secs(300);
@@ -125,7 +137,7 @@ async fn execute_ai_cli(
             Ok(true) => {}
         }
 
-        let mut cmd = Command::new(&command);
+        let mut cmd = no_window_cmd(&command);
         cmd.env("PATH", &path);
         for arg in &args {
             cmd.arg(arg);
