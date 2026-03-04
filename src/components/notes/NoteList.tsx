@@ -67,6 +67,7 @@ interface NoteItemProps {
   modified: number;
   isSelected: boolean;
   isPinned: boolean;
+  tags?: string[];
   onSelect: (id: string) => void;
   onContextMenu: (e: React.MouseEvent, id: string) => void;
   t: TFunction;
@@ -79,6 +80,7 @@ const NoteItem = memo(function NoteItem({
   modified,
   isSelected,
   isPinned,
+  tags,
   onSelect,
   onContextMenu,
   t,
@@ -103,6 +105,7 @@ const NoteItem = memo(function NoteItem({
       meta={formatDate(modified, t)}
       isSelected={isSelected}
       isPinned={isPinned}
+      tags={tags}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
     />
@@ -126,6 +129,7 @@ export function NoteList({ onNoteClick }: NoteListProps = {}) {
     isLoading,
     searchQuery,
     searchResults,
+    selectedTag,
   } = useNotes();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -225,15 +229,21 @@ export function NoteList({ onNoteClick }: NoteListProps = {}) {
   // Memoize display items to prevent recalculation on every render
   const displayItems = useMemo(() => {
     if (searchQuery.trim()) {
+      // If searching, show search results
       return searchResults.map((r) => ({
         id: r.id,
         title: r.title,
         preview: r.preview,
         modified: r.modified,
+        tags: r.tags,
       }));
     }
+    // Filter by selected tag if active
+    if (selectedTag) {
+      return notes.filter((note) => note.tags?.includes(selectedTag));
+    }
     return notes;
-  }, [searchQuery, searchResults, notes]);
+  }, [searchQuery, searchResults, notes, selectedTag]);
 
   // Listen for focus request from editor (when Escape is pressed)
   useEffect(() => {
@@ -279,6 +289,7 @@ export function NoteList({ onNoteClick }: NoteListProps = {}) {
             modified={item.modified}
             isSelected={selectedNoteId === item.id}
             isPinned={pinnedIds.has(item.id)}
+            tags={item.tags}
             onSelect={handleSelectNote}
             onContextMenu={handleContextMenu}
             t={t}

@@ -3,6 +3,7 @@ export interface NoteMetadata {
   title: string;
   preview: string;
   modified: number;
+  tags?: string[];
 }
 
 export interface Note {
@@ -38,4 +39,11 @@ export interface Settings {
   editorWidth?: EditorWidth;
   defaultNoteName?: string;
   interfaceZoom?: number;
+}
+
+export interface TemplateMetadata {
+  name: string;
+  title: string;
+  preview: string;
+  modified: number;
 }

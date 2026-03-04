@@ -11,7 +11,8 @@ use crate::config::get_search_index_path;
 use crate::state::AppState;
 use crate::types::SearchResult;
 use crate::utils::{
-    abs_path_from_id, extract_title, generate_preview, id_from_abs_path, is_visible_notes_entry,
+    abs_path_from_id, extract_tags, extract_title, generate_preview, id_from_abs_path,
+    is_visible_notes_entry,
 };
 
 // Tantivy search index state
@@ -128,6 +129,7 @@ impl SearchIndex {
                 .unwrap_or(0);
 
             let preview = generate_preview(content);
+            let tags = extract_tags(content);
 
             results.push(SearchResult {
                 id,
@@ -135,6 +137,7 @@ impl SearchIndex {
                 preview,
                 modified,
                 score,
+                tags,
             });
         }
 
@@ -244,7 +247,7 @@ async fn fallback_search(
         None => return Ok(vec![]),
     };
 
-    let cache_data: Vec<(String, String, String, i64)> = {
+    let cache_data: Vec<(String, String, String, i64, Vec<String>)> = {
         let cache = state
             .notes_cache
             .read()
@@ -257,6 +260,7 @@ async fn fallback_search(
                     note.title.clone(),
                     note.preview.clone(),
                     note.modified,
+                    note.tags.clone(),
                 )
             })
             .collect()
@@ -266,7 +270,7 @@ async fn fallback_search(
     let query_lower = query.to_lowercase();
     let mut results: Vec<SearchResult> = Vec::new();
 
-    for (id, title, preview, modified) in cache_data {
+    for (id, title, preview, modified, tags) in cache_data {
         let title_lower = title.to_lowercase();
         let mut score = 0.0f32;
 
@@ -296,6 +300,7 @@ async fn fallback_search(
                 preview,
                 modified,
                 score,
+                tags,
             });
         }
     }

@@ -392,6 +392,8 @@ interface EditorProps {
   onToggleSidebar?: () => void;
   sidebarVisible?: boolean;
   focusMode?: boolean;
+  onToggleBacklinks?: () => void;
+  backlinksVisible?: boolean;
   onMobileBack?: () => void;
   previewMode?: PreviewModeData;
   onEditorReady?: (editor: TiptapEditor | null) => void;
@@ -403,6 +405,8 @@ export function Editor({
   onToggleSidebar,
   sidebarVisible,
   focusMode,
+  onToggleBacklinks,
+  backlinksVisible,
   onMobileBack,
   onEditorReady,
   previewMode,
@@ -1591,6 +1595,15 @@ export function Editor({
               className="hidden md:flex shrink-0"
             >
               <PanelLeftIcon className="w-4.5 h-4.5 stroke-[1.5]" />
+            </IconButton>
+          )}
+          {onToggleBacklinks && (
+            <IconButton
+              onClick={onToggleBacklinks}
+              title={backlinksVisible ? `Hide backlinks` : `Show backlinks`}
+              className="hidden md:flex shrink-0"
+            >
+              <LinkIcon className="w-4.5 h-4.5 stroke-[1.5]" />
             </IconButton>
           )}
           <span className="text-xs text-text-muted mb-px truncate hidden sm:inline">

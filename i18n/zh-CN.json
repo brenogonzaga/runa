@@ -179,12 +179,20 @@
         "reloadFailed": "重新加载失败",
         "saveToFolderFailed": "保存到文件夹失败",
         "deleteFailed": "删除笔记失败",
-        "filepathCopied": "文件路径已复制到剪贴板"
+        "filepathCopied": "文件路径已复制到剪贴板",
+        "trashLoadError": "加载回收站失败",
+        "noteRestored": "笔记已恢复",
+        "restoreError": "恢复笔记失败",
+        "notePermanentlyDeleted": "笔记已永久删除",
+        "trashEmptied": "回收站已清空",
+        "emptyTrashError": "清空回收站失败"
     },
     "dialogs": {
         "deleteNote": "删除笔记？",
         "deleteDescription": "这将永久删除该笔记及其所有内容。此操作无法撤销。",
-        "updateAvailable": "有可用更新：v{{version}}"
+        "updateAvailable": "有可用更新：v{{version}}",
+        "permanentDeleteConfirm": "永久删除「{{title}}」？此操作无法撤销。",
+        "emptyTrashConfirm": "清空回收站（{{count}} 条笔记）？此操作无法撤销。"
     },
     "sections": {
         "folderLocation": "文件夹位置",
@@ -272,7 +280,8 @@
         "openNotesFolder": "打开笔记文件夹",
         "switchToLight": "切换到浅色主题",
         "switchToDark": "切换到深色主题",
-        "switchToSystem": "切换到系统主题"
+        "switchToSystem": "切换到系统主题",
+        "openTrash": "打开回收站"
     },
     "slashCommands": {
         "text": "文本",
@@ -362,5 +371,18 @@
     "dateFormats": {
         "yesterday": "昨天",
         "daysAgo": "{{count}}天前"
+    },
+    "trash": {
+        "title": "回收站",
+        "empty": "回收站为空",
+        "loading": "加载中...",
+        "emptyTrash": "清空回收站",
+        "restore": "恢复",
+        "deletePermanently": "永久删除"
+    },
+    "backlinks": {
+        "title": "反向链接",
+        "empty": "未找到反向链接",
+        "selectNote": "选择一条笔记以查看反向链接"
     }
 }

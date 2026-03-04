@@ -179,11 +179,19 @@
         "reloadFailed": "Failed to reload",
         "saveToFolderFailed": "Failed to save to folder",
         "deleteFailed": "Failed to delete note",
-        "filepathCopied": "File path copied to clipboard"
+        "filepathCopied": "File path copied to clipboard",
+        "trashLoadError": "Failed to load trash",
+        "noteRestored": "Note restored",
+        "restoreError": "Failed to restore note",
+        "notePermanentlyDeleted": "Note permanently deleted",
+        "trashEmptied": "Trash emptied",
+        "emptyTrashError": "Failed to empty trash"
     },
     "dialogs": {
         "deleteNote": "Delete note?",
         "deleteDescription": "This will permanently delete the note and all its content. This action cannot be undone.",
+        "permanentDeleteConfirm": "Permanently delete \"{{title}}\"? This action cannot be undone.",
+        "emptyTrashConfirm": "Empty trash ({{count}} notes)? This action cannot be undone.",
         "updateAvailable": "Update Available: v{{version}}"
     },
     "sections": {
@@ -270,9 +278,23 @@
         "exitFocus": "Exit Focus Mode",
         "toggleMarkdown": "Toggle Markdown Source",
         "openNotesFolder": "Open Notes Folder",
-        "switchToLight": "Switch Theme to Light Mode",
-        "switchToDark": "Switch Theme to Dark Mode",
-        "switchToSystem": "Switch Theme to System Mode"
+        "switchToLight": "Switch to Light Theme",
+        "switchToDark": "Switch to Dark Theme",
+        "switchToSystem": "Switch to System Theme",
+        "openTrash": "Open Trash"
+    },
+    "trash": {
+        "title": "Trash",
+        "empty": "Trash is empty",
+        "loading": "Loading...",
+        "emptyTrash": "Empty Trash",
+        "restore": "Restore",
+        "deletePermanently": "Delete Permanently"
+    },
+    "backlinks": {
+        "title": "Backlinks",
+        "empty": "No backlinks found",
+        "selectNote": "Select a note to view backlinks"
     },
     "slashCommands": {
         "text": "Text",

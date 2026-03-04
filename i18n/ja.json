@@ -179,12 +179,20 @@
         "reloadFailed": "再読み込みに失敗しました",
         "saveToFolderFailed": "フォルダへの保存に失敗しました",
         "deleteFailed": "ノートの削除に失敗しました",
-        "filepathCopied": "ファイルパスをクリップボードにコピーしました"
+        "filepathCopied": "ファイルパスをクリップボードにコピーしました",
+        "trashLoadError": "ゴミ箱の読み込みに失敗しました",
+        "noteRestored": "ノートを復元しました",
+        "restoreError": "ノートの復元に失敗しました",
+        "notePermanentlyDeleted": "ノートを完全に削除しました",
+        "trashEmptied": "ゴミ箱を空にしました",
+        "emptyTrashError": "ゴミ箱を空にできませんでした"
     },
     "dialogs": {
         "deleteNote": "ノートを削除しますか？",
         "deleteDescription": "このノートとその内容がすべて永久に削除されます。この操作は元に戻せません。",
-        "updateAvailable": "アップデート利用可能: v{{version}}"
+        "updateAvailable": "アップデート利用可能: v{{version}}",
+        "permanentDeleteConfirm": "\"{{title}}\"を完全に削除しますか？この操作は元に戻せません。",
+        "emptyTrashConfirm": "ゴミ箱を空にしますか（{{count}}件のノート）？この操作は元に戻せません。"
     },
     "sections": {
         "folderLocation": "フォルダの場所",
@@ -272,7 +280,8 @@
         "openNotesFolder": "ノートフォルダを開く",
         "switchToLight": "ライトテーマに切り替え",
         "switchToDark": "ダークテーマに切り替え",
-        "switchToSystem": "システムテーマに切り替え"
+        "switchToSystem": "システムテーマに切り替え",
+        "openTrash": "ゴミ箱を開く"
     },
     "slashCommands": {
         "text": "テキスト",
@@ -362,5 +371,18 @@
     "dateFormats": {
         "yesterday": "昨日",
         "daysAgo": "{{count}}日前"
+    },
+    "trash": {
+        "title": "ゴミ箱",
+        "empty": "ゴミ箱は空です",
+        "loading": "読み込み中...",
+        "emptyTrash": "ゴミ箱を空にする",
+        "restore": "復元",
+        "deletePermanently": "完全に削除"
+    },
+    "backlinks": {
+        "title": "バックリンク",
+        "empty": "バックリンクが見つかりません",
+        "selectNote": "バックリンクを表示するノートを選択してください"
     }
 }

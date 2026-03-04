@@ -179,11 +179,19 @@
         "reloadFailed": "Falha ao recarregar",
         "saveToFolderFailed": "Falha ao salvar na pasta",
         "deleteFailed": "Falha ao excluir nota",
-        "filepathCopied": "Caminho do arquivo copiado"
+        "filepathCopied": "Caminho do arquivo copiado",
+        "trashLoadError": "Falha ao carregar lixeira",
+        "noteRestored": "Nota restaurada",
+        "restoreError": "Falha ao restaurar nota",
+        "notePermanentlyDeleted": "Nota removida permanentemente",
+        "trashEmptied": "Lixeira esvaziada",
+        "emptyTrashError": "Falha ao esvaziar a lixeira"
     },
     "dialogs": {
         "deleteNote": "Excluir nota?",
         "deleteDescription": "Isso excluirá permanentemente a nota e todo o seu conteúdo. Esta ação não pode ser desfeita.",
+        "permanentDeleteConfirm": "Excluir permanentemente \"{{title}}\"? Esta ação não pode ser desfeita.",
+        "emptyTrashConfirm": "Esvaziar lixeira ({{count}} notas)? Esta ação não pode ser desfeita.",
         "updateAvailable": "Atualização Disponível: v{{version}}"
     },
     "sections": {
@@ -272,7 +280,21 @@
         "openNotesFolder": "Abrir Pasta de Notas",
         "switchToLight": "Mudar para Tema Claro",
         "switchToDark": "Mudar para Tema Escuro",
-        "switchToSystem": "Mudar para Tema do Sistema"
+        "switchToSystem": "Mudar para Tema do Sistema",
+        "openTrash": "Abrir Lixeira"
+    },
+    "trash": {
+        "title": "Lixeira",
+        "empty": "Lixeira vazia",
+        "loading": "Carregando...",
+        "emptyTrash": "Esvaziar Lixeira",
+        "restore": "Restaurar",
+        "deletePermanently": "Excluir Permanentemente"
+    },
+    "backlinks": {
+        "title": "Backlinks",
+        "empty": "Nenhum backlink encontrado",
+        "selectNote": "Selecione uma nota para ver backlinks"
     },
     "slashCommands": {
         "text": "Texto",

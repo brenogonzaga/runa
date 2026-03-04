@@ -27,6 +27,8 @@ interface NotesDataContextValue {
   isSearching: boolean;
   hasExternalChanges: boolean;
   reloadVersion: number;
+  selectedTag: string | null;
+  availableTags: string[];
 }
 
 // Actions context: stable references, rarely causes re-renders
@@ -43,6 +45,7 @@ interface NotesActionsContextValue {
   clearSearch: () => void;
   pinNote: (id: string) => Promise<void>;
   unpinNote: (id: string) => Promise<void>;
+  setTagFilter: (tag: string | null) => void;
 }
 
 const NotesDataContext = createContext<NotesDataContextValue | null>(null);
@@ -61,6 +64,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [hasExternalChanges, setHasExternalChanges] = useState(false);
   // Increments when user manually refreshes, so Editor knows to reload content
   const [reloadVersion, setReloadVersion] = useState(0);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   // Track recently saved note IDs to ignore file-change events from our own saves
   const recentlySavedRef = useRef<Set<string>>(new Set());
@@ -460,6 +464,20 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     }
   }, [notesFolder, refreshNotes]);
 
+  // Compute available tags from all notes
+  const availableTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    notes.forEach((note) => {
+      note.tags?.forEach((tag) => tagSet.add(tag));
+    });
+    return Array.from(tagSet).sort();
+  }, [notes]);
+
+  // Filter notes by selected tag
+  const setTagFilter = useCallback((tag: string | null) => {
+    setSelectedTag(tag);
+  }, []);
+
   // Memoize data context value to prevent unnecessary re-renders
   const dataValue = useMemo<NotesDataContextValue>(
     () => ({
@@ -474,6 +492,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       isSearching,
       hasExternalChanges,
       reloadVersion,
+      selectedTag,
+      availableTags,
     }),
     [
       notes,
@@ -487,6 +507,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       isSearching,
       hasExternalChanges,
       reloadVersion,
+      selectedTag,
+      availableTags,
     ],
   );
 
@@ -505,6 +527,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       clearSearch,
       pinNote,
       unpinNote,
+      setTagFilter,
     }),
     [
       selectNote,
@@ -519,6 +542,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       clearSearch,
       pinNote,
       unpinNote,
+      setTagFilter,
     ],
   );
 

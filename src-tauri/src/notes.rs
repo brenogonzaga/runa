@@ -10,11 +10,11 @@ use crate::config::{
 };
 use crate::search::SearchIndex;
 use crate::state::AppState;
-use crate::types::{FileContent, Note, NoteMetadata, Settings};
+use crate::types::{FileContent, Note, NoteMetadata, Settings, TemplateMetadata};
 use crate::utils::{
-    abs_path_from_id, expand_note_name_template, extract_title, extract_title_from_id,
-    generate_preview, id_from_abs_path, is_visible_notes_entry, sanitize_filename,
-    validate_preview_path,
+    abs_path_from_id, expand_note_name_template, expand_template_content, extract_tags,
+    extract_title, extract_title_from_id, extract_wikilinks, generate_preview, id_from_abs_path,
+    is_visible_notes_entry, sanitize_filename, validate_preview_path,
 };
 
 /// Get the default notes folder path (app documents directory on mobile, None on desktop)
@@ -139,7 +139,7 @@ pub(crate) async fn list_notes(state: State<'_, AppState>) -> Result<Vec<NoteMet
     let path_clone = path.clone();
     let discovered = tokio::task::spawn_blocking(move || {
         use walkdir::WalkDir;
-        let mut results: Vec<(String, String, String, i64)> = Vec::new();
+        let mut results: Vec<(String, String, String, i64, Vec<String>)> = Vec::new();
         for entry in WalkDir::new(&path_clone)
             .max_depth(10)
             .into_iter()
@@ -161,7 +161,8 @@ pub(crate) async fn list_notes(state: State<'_, AppState>) -> Result<Vec<NoteMet
                         .unwrap_or(0);
                     let title = extract_title(&content);
                     let preview = generate_preview(&content);
-                    results.push((id, title, preview, modified));
+                    let tags = extract_tags(&content);
+                    results.push((id, title, preview, modified, tags));
                 }
             }
         }
@@ -172,11 +173,12 @@ pub(crate) async fn list_notes(state: State<'_, AppState>) -> Result<Vec<NoteMet
 
     let mut notes: Vec<NoteMetadata> = discovered
         .into_iter()
-        .map(|(id, title, preview, modified)| NoteMetadata {
+        .map(|(id, title, preview, modified, tags)| NoteMetadata {
             id,
             title,
             preview,
             modified,
+            tags,
         })
         .collect();
 
@@ -388,11 +390,33 @@ pub(crate) async fn delete_note(id: String, state: State<'_, AppState>) -> Resul
 
     let folder_path = PathBuf::from(&folder);
     let file_path = abs_path_from_id(&folder_path, &id)?;
-    if file_path.exists() {
-        fs::remove_file(&file_path)
-            .await
-            .map_err(|e| e.to_string())?;
+
+    if !file_path.exists() {
+        return Err("Note not found".to_string());
     }
+
+    // Create .trash folder if it doesn't exist
+    let trash_dir = folder_path.join(".trash");
+    fs::create_dir_all(&trash_dir)
+        .await
+        .map_err(|e| format!("Failed to create trash folder: {}", e))?;
+
+    // Move file to trash with timestamp to avoid conflicts
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    let file_name = file_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or("Invalid file name")?;
+
+    let trash_file = trash_dir.join(format!("{}_{}", timestamp, file_name));
+
+    fs::rename(&file_path, &trash_file)
+        .await
+        .map_err(|e| format!("Failed to move note to trash: {}", e))?;
 
     {
         if let Ok(index) = state.search_index.lock() {
@@ -408,6 +432,217 @@ pub(crate) async fn delete_note(id: String, state: State<'_, AppState>) -> Resul
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub(crate) async fn list_trash(state: State<'_, AppState>) -> Result<Vec<NoteMetadata>, String> {
+    let folder = {
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
+        app_config
+            .notes_folder
+            .clone()
+            .ok_or("Notes folder not set")?
+    };
+
+    let trash_dir = PathBuf::from(&folder).join(".trash");
+
+    if !trash_dir.exists() {
+        return Ok(vec![]);
+    }
+
+    let mut trash_notes = Vec::new();
+    let mut entries = fs::read_dir(&trash_dir)
+        .await
+        .map_err(|e| format!("Failed to read trash folder: {}", e))?;
+
+    while let Some(entry) = entries.next_entry().await.map_err(|e| e.to_string())? {
+        let file_path = entry.path();
+        if !file_path.is_file() {
+            continue;
+        }
+
+        if let Ok(content) = fs::read_to_string(&file_path).await {
+            let metadata = entry.metadata().await.map_err(|e| e.to_string())?;
+            let modified = metadata
+                .modified()
+                .ok()
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map(|d| d.as_secs() as i64)
+                .unwrap_or(0);
+
+            let file_name = file_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+            // Extract original ID from filename (format: timestamp_original.md)
+            let id = file_name
+                .split_once('_')
+                .map(|x| x.1)
+                .unwrap_or(file_name)
+                .trim_end_matches(".md")
+                .to_string();
+
+            let title = extract_title(&content);
+            let preview = generate_preview(&content);
+            let tags = extract_tags(&content);
+
+            trash_notes.push(NoteMetadata {
+                id,
+                title,
+                preview,
+                modified,
+                tags,
+            });
+        }
+    }
+
+    trash_notes.sort_by(|a, b| b.modified.cmp(&a.modified));
+    Ok(trash_notes)
+}
+
+#[tauri::command]
+pub(crate) async fn restore_note(id: String, state: State<'_, AppState>) -> Result<(), String> {
+    let folder = {
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
+        app_config
+            .notes_folder
+            .clone()
+            .ok_or("Notes folder not set")?
+    };
+
+    let folder_path = PathBuf::from(&folder);
+    let trash_dir = folder_path.join(".trash");
+
+    // Find the file in trash (format: timestamp_id.md)
+    let mut entries = fs::read_dir(&trash_dir)
+        .await
+        .map_err(|e| format!("Failed to read trash folder: {}", e))?;
+
+    let mut trash_file: Option<PathBuf> = None;
+    while let Some(entry) = entries.next_entry().await.map_err(|e| e.to_string())? {
+        let file_path = entry.path();
+        let file_name = file_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+        if file_name.ends_with(&format!("_{}.md", id)) || file_name.ends_with(&format!("_{}", id)) {
+            trash_file = Some(file_path);
+            break;
+        }
+    }
+
+    let trash_file = trash_file.ok_or("Note not found in trash")?;
+
+    // Restore to original location
+    let restored_path = abs_path_from_id(&folder_path, &id)?;
+
+    // Create parent directories if needed
+    if let Some(parent) = restored_path.parent() {
+        fs::create_dir_all(parent)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    fs::rename(&trash_file, &restored_path)
+        .await
+        .map_err(|e| format!("Failed to restore note: {}", e))?;
+
+    // Re-index the note
+    let content = fs::read_to_string(&restored_path)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let metadata = fs::metadata(&restored_path)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let modified = metadata
+        .modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+
+    let title = extract_title(&content);
+
+    {
+        if let Ok(index) = state.search_index.lock() {
+            if let Some(ref search_index) = *index {
+                let _ = search_index.index_note(&id, &title, &content, modified);
+            }
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub(crate) async fn empty_trash(state: State<'_, AppState>) -> Result<(), String> {
+    let folder = {
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
+        app_config
+            .notes_folder
+            .clone()
+            .ok_or("Notes folder not set")?
+    };
+
+    let trash_dir = PathBuf::from(&folder).join(".trash");
+
+    if trash_dir.exists() {
+        fs::remove_dir_all(&trash_dir)
+            .await
+            .map_err(|e| format!("Failed to empty trash: {}", e))?;
+
+        // Recreate empty trash dir
+        fs::create_dir_all(&trash_dir)
+            .await
+            .map_err(|e| format!("Failed to recreate trash folder: {}", e))?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub(crate) async fn permanently_delete_note(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let folder = {
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
+        app_config
+            .notes_folder
+            .clone()
+            .ok_or("Notes folder not set")?
+    };
+
+    let trash_dir = PathBuf::from(&folder).join(".trash");
+
+    // Find and delete the file in trash
+    let mut entries = fs::read_dir(&trash_dir)
+        .await
+        .map_err(|e| format!("Failed to read trash folder: {}", e))?;
+
+    while let Some(entry) = entries.next_entry().await.map_err(|e| e.to_string())? {
+        let file_path = entry.path();
+        let file_name = file_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+        if file_name.ends_with(&format!("_{}.md", id)) || file_name.ends_with(&format!("_{}", id)) {
+            fs::remove_file(&file_path)
+                .await
+                .map_err(|e| format!("Failed to permanently delete note: {}", e))?;
+            return Ok(());
+        }
+    }
+
+    Err("Note not found in trash".to_string())
 }
 
 #[tauri::command]
@@ -708,11 +943,14 @@ pub(crate) async fn import_file_to_folder(
         .collect::<Vec<_>>()
         .join(" ");
 
+    let tags = extract_tags(&content);
+
     let metadata = NoteMetadata {
         id: final_id,
         title: extracted_title,
         preview,
         modified,
+        tags,
     };
 
     {
@@ -728,4 +966,392 @@ pub(crate) async fn import_file_to_folder(
     }
 
     Ok(metadata)
+}
+
+/// Get all notes that link to the specified note via [[wikilinks]]
+#[tauri::command]
+pub(crate) async fn get_backlinks(
+    note_id: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<NoteMetadata>, String> {
+    let folder = {
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
+        app_config
+            .notes_folder
+            .clone()
+            .ok_or("Notes folder not set")?
+    };
+
+    let path = PathBuf::from(&folder);
+    if !path.exists() {
+        return Ok(vec![]);
+    }
+
+    // Extract the note title/filename from the note_id for matching
+    let target_title = extract_title_from_id(&note_id);
+    let target_filename = note_id.rsplit('/').next().unwrap_or(&note_id);
+
+    let path_clone = path.clone();
+    let note_id_clone = note_id.clone();
+    let target_title_clone = target_title.clone();
+    let target_filename_clone = target_filename.to_string();
+
+    let discovered = tokio::task::spawn_blocking(move || {
+        use walkdir::WalkDir;
+        let mut results: Vec<(String, String, String, i64, Vec<String>)> = Vec::new();
+
+        for entry in WalkDir::new(&path_clone)
+            .max_depth(10)
+            .into_iter()
+            .filter_entry(is_visible_notes_entry)
+            .flatten()
+        {
+            let file_path = entry.path();
+            if !file_path.is_file() {
+                continue;
+            }
+
+            if let Some(id) = id_from_abs_path(&path_clone, file_path) {
+                // Skip the note itself
+                if id == note_id_clone {
+                    continue;
+                }
+
+                if let Ok(content) = std::fs::read_to_string(file_path) {
+                    let wikilinks = extract_wikilinks(&content);
+
+                    // Check if any wikilink matches the target note
+                    let has_backlink = wikilinks.iter().any(|link| {
+                        // Match by exact note ID
+                        if link == &note_id_clone {
+                            return true;
+                        }
+                        // Match by filename (with or without .md)
+                        if link == &target_filename_clone
+                            || link == &format!("{}.md", target_filename_clone)
+                        {
+                            return true;
+                        }
+                        // Match by title (case-insensitive)
+                        if link.to_lowercase() == target_title_clone.to_lowercase() {
+                            return true;
+                        }
+                        false
+                    });
+
+                    if has_backlink {
+                        let modified = entry
+                            .metadata()
+                            .ok()
+                            .and_then(|m| m.modified().ok())
+                            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                            .map(|d| d.as_secs() as i64)
+                            .unwrap_or(0);
+                        let title = extract_title(&content);
+                        let preview = generate_preview(&content);
+                        let tags = extract_tags(&content);
+                        results.push((id, title, preview, modified, tags));
+                    }
+                }
+            }
+        }
+        results
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let mut backlinks: Vec<NoteMetadata> = discovered
+        .into_iter()
+        .map(|(id, title, preview, modified, tags)| NoteMetadata {
+            id,
+            title,
+            preview,
+            modified,
+            tags,
+        })
+        .collect();
+
+    // Sort by modified date (most recent first)
+    backlinks.sort_by(|a, b| b.modified.cmp(&a.modified));
+
+    Ok(backlinks)
+}
+
+/// List all available templates
+#[tauri::command]
+pub(crate) async fn list_templates(
+    state: State<'_, AppState>,
+) -> Result<Vec<TemplateMetadata>, String> {
+    let folder = {
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
+        app_config
+            .notes_folder
+            .clone()
+            .ok_or("Notes folder not set")?
+    };
+
+    let templates_path = PathBuf::from(&folder).join(".runa").join("templates");
+    if !templates_path.exists() {
+        return Ok(vec![]);
+    }
+
+    let templates_path_clone = templates_path.clone();
+    let discovered = tokio::task::spawn_blocking(move || {
+        use walkdir::WalkDir;
+        let mut results: Vec<(String, String, String, i64)> = Vec::new();
+
+        for entry in WalkDir::new(&templates_path_clone)
+            .max_depth(2)
+            .into_iter()
+            .flatten()
+        {
+            let file_path = entry.path();
+            if !file_path.is_file() {
+                continue;
+            }
+
+            if file_path.extension().and_then(|s| s.to_str()) == Some("md") {
+                if let Ok(content) = std::fs::read_to_string(file_path) {
+                    let modified = entry
+                        .metadata()
+                        .ok()
+                        .and_then(|m| m.modified().ok())
+                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                        .map(|d| d.as_secs() as i64)
+                        .unwrap_or(0);
+
+                    let name = file_path
+                        .strip_prefix(&templates_path_clone)
+                        .ok()
+                        .and_then(|p| p.to_str())
+                        .map(|s| s.strip_suffix(".md").unwrap_or(s).to_string())
+                        .unwrap_or_else(|| "Untitled".to_string());
+
+                    let title = extract_title(&content);
+                    let preview = generate_preview(&content);
+
+                    results.push((name, title, preview, modified));
+                }
+            }
+        }
+        results
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let mut templates: Vec<TemplateMetadata> = discovered
+        .into_iter()
+        .map(|(name, title, preview, modified)| TemplateMetadata {
+            name,
+            title,
+            preview,
+            modified,
+        })
+        .collect();
+
+    templates.sort_by(|a, b| a.name.cmp(&b.name));
+
+    Ok(templates)
+}
+
+/// Create a new note from a template
+#[tauri::command]
+pub(crate) async fn create_note_from_template(
+    template_name: String,
+    note_title: Option<String>,
+    state: State<'_, AppState>,
+    app: AppHandle,
+) -> Result<NoteMetadata, String> {
+    let folder = {
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
+        app_config
+            .notes_folder
+            .clone()
+            .ok_or("Notes folder not set")?
+    };
+
+    let templates_path = PathBuf::from(&folder).join(".runa").join("templates");
+    let template_file = templates_path.join(format!("{}.md", template_name));
+
+    if !template_file.exists() {
+        return Err("Template not found".to_string());
+    }
+
+    // Read the template content
+    let template_content = fs::read_to_string(&template_file)
+        .await
+        .map_err(|e| format!("Failed to read template: {}", e))?;
+
+    // Expand template variables
+    let content = expand_template_content(&template_content, note_title.as_deref());
+
+    // Extract or use provided title
+    let title = note_title.unwrap_or_else(|| extract_title(&content));
+
+    // Create the note
+    let (id, file_path) = {
+        let settings = state
+            .settings
+            .read()
+            .map_err(|e| format!("Failed to read settings: {}", e))?;
+
+        let default_name = settings
+            .default_note_name
+            .as_deref()
+            .unwrap_or("{date} {time}");
+
+        let expanded = expand_note_name_template(default_name);
+        let sanitized = sanitize_filename(&expanded);
+        let base_filename = if sanitized.is_empty() {
+            "Untitled".to_string()
+        } else {
+            sanitized
+        };
+
+        let notes_path = PathBuf::from(&folder);
+        let mut counter = 0;
+        let mut filename = format!("{}.md", base_filename);
+        let mut file_path = notes_path.join(&filename);
+
+        while file_path.exists() {
+            counter += 1;
+            filename = format!("{} {}.md", base_filename, counter);
+            file_path = notes_path.join(&filename);
+        }
+
+        let id = filename
+            .strip_suffix(".md")
+            .unwrap_or(&filename)
+            .to_string();
+        (id, file_path)
+    };
+
+    // Write the file
+    let mut file = fs::File::create(&file_path)
+        .await
+        .map_err(|e| e.to_string())?;
+    file.write_all(content.as_bytes())
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // Get metadata
+    let metadata_result = fs::metadata(&file_path).await.map_err(|e| e.to_string())?;
+    let modified = metadata_result
+        .modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+
+    let preview = generate_preview(&content);
+    let tags = extract_tags(&content);
+
+    let metadata = NoteMetadata {
+        id: id.clone(),
+        title,
+        preview,
+        modified,
+        tags,
+    };
+
+    // Update cache
+    {
+        if let Ok(mut cache) = state.notes_cache.write() {
+            cache.insert(metadata.id.clone(), metadata.clone());
+        }
+    }
+
+    // Rebuild search index
+    if let Ok(index_path) = get_search_index_path(&app) {
+        if let Ok(search_index) = SearchIndex::new(&index_path) {
+            let _ = search_index.rebuild_index(&PathBuf::from(&folder));
+            if let Ok(mut index) = state.search_index.lock() {
+                *index = Some(search_index);
+            }
+        }
+    }
+
+    let _ = app.emit_to("main", "select-note", &metadata.id);
+
+    Ok(metadata)
+}
+
+/// Save a new template or update an existing one
+#[tauri::command]
+pub(crate) async fn save_template(
+    name: String,
+    content: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let folder = {
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
+        app_config
+            .notes_folder
+            .clone()
+            .ok_or("Notes folder not set")?
+    };
+
+    let templates_path = PathBuf::from(&folder).join(".runa").join("templates");
+    fs::create_dir_all(&templates_path)
+        .await
+        .map_err(|e| format!("Failed to create templates directory: {}", e))?;
+
+    let sanitized_name = sanitize_filename(&name);
+    if sanitized_name.is_empty() {
+        return Err("Invalid template name".to_string());
+    }
+
+    let template_file = templates_path.join(format!("{}.md", sanitized_name));
+
+    let mut file = fs::File::create(&template_file)
+        .await
+        .map_err(|e| e.to_string())?;
+    file.write_all(content.as_bytes())
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+/// Delete a template
+#[tauri::command]
+pub(crate) async fn delete_template(
+    name: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let folder = {
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
+        app_config
+            .notes_folder
+            .clone()
+            .ok_or("Notes folder not set")?
+    };
+
+    let templates_path = PathBuf::from(&folder).join(".runa").join("templates");
+    let template_file = templates_path.join(format!("{}.md", name));
+
+    if !template_file.exists() {
+        return Err("Template not found".to_string());
+    }
+
+    fs::remove_file(&template_file)
+        .await
+        .map_err(|e| format!("Failed to delete template: {}", e))?;
+
+    Ok(())
 }

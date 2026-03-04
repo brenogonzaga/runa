@@ -5,7 +5,7 @@ import { useNotes } from "../../context/NotesContext";
 import { NoteList } from "../notes/NoteList";
 import { Footer } from "./Footer";
 import { IconButton } from "../ui";
-import { PlusIcon, XIcon, SearchIcon, SearchOffIcon, RefreshCwIcon } from "../icons";
+import { PlusIcon, XIcon, SearchIcon, SearchOffIcon, RefreshCwIcon, TrashIcon } from "../icons";
 import { mod, shift, isMac, isMacDesktop } from "../../lib/platform";
 import { usePullToRefresh } from "../../lib/usePullToRefresh";
 import { Input } from "../ui/Input";
@@ -13,11 +13,24 @@ import { Input } from "../ui/Input";
 interface SidebarProps {
   onOpenSettings?: () => void;
   onNoteClick?: () => void;
+  onOpenTrash?: () => void;
 }
 
-export function Sidebar({ onOpenSettings, onNoteClick }: SidebarProps) {
+export function Sidebar({ onOpenSettings, onNoteClick, onOpenTrash }: SidebarProps) {
   const { t } = useTranslation();
-  const { createNote, notes, search, searchQuery, clearSearch } = useNotes();
+  const {
+    createNote,
+    notes,
+    search,
+    searchQuery,
+    clearSearch,
+    availableTags,
+    selectedTag,
+    setTagFilter,
+  } = useNotes();
+
+  const handleNewNote = createNote;
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [inputValue, setInputValue] = useState(searchQuery);
   const debounceRef = useRef<number | null>(null);
@@ -145,9 +158,12 @@ export function Sidebar({ onOpenSettings, onNoteClick }: SidebarProps) {
               <SearchIcon className="w-4.25 h-4.25 stroke-[1.5]" />
             )}
           </IconButton>
+          <IconButton onClick={onOpenTrash} title={t("commands.openTrash")}>
+            <TrashIcon className="w-4.25 h-4.25 stroke-[1.5]" />
+          </IconButton>
           <IconButton
             variant="ghost"
-            onClick={createNote}
+            onClick={handleNewNote}
             title={`${t("buttons.newNote")} (${mod}${isMac ? "" : "+"}N)`}
           >
             <PlusIcon className="w-5.25 h-5.25 stroke-[1.4]" />
@@ -197,6 +213,28 @@ export function Sidebar({ onOpenSettings, onNoteClick }: SidebarProps) {
                   <XIcon className="w-4.5 h-4.5 stroke-[1.5]" />
                 </button>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Tags filter */}
+        {availableTags.length > 0 && (
+          <div className="px-2 pt-2 pb-1">
+            <div className="flex flex-wrap gap-1.5">
+              {availableTags.map((tag) => (
+                <button
+                  key={tag}
+                  onClick={() => setTagFilter(selectedTag === tag ? null : tag)}
+                  className={cn(
+                    "inline-flex items-center px-2 py-1 text-2xs font-medium rounded transition-colors",
+                    selectedTag === tag
+                      ? "bg-accent text-white"
+                      : "bg-bg-muted text-text-muted hover:bg-bg-emphasis hover:text-text",
+                  )}
+                >
+                  #{tag}
+                </button>
+              ))}
             </div>
           </div>
         )}

@@ -179,12 +179,20 @@
         "reloadFailed": "Neuladen fehlgeschlagen",
         "saveToFolderFailed": "In Ordner speichern fehlgeschlagen",
         "deleteFailed": "Notiz löschen fehlgeschlagen",
-        "filepathCopied": "Dateipfad in Zwischenablage kopiert"
+        "filepathCopied": "Dateipfad in Zwischenablage kopiert",
+        "trashLoadError": "Papierkorb konnte nicht geladen werden",
+        "noteRestored": "Notiz wiederhergestellt",
+        "restoreError": "Notiz wiederherstellen fehlgeschlagen",
+        "notePermanentlyDeleted": "Notiz dauerhaft gelöscht",
+        "trashEmptied": "Papierkorb geleert",
+        "emptyTrashError": "Papierkorb leeren fehlgeschlagen"
     },
     "dialogs": {
         "deleteNote": "Notiz löschen?",
         "deleteDescription": "Dies löscht die Notiz und ihren gesamten Inhalt dauerhaft. Diese Aktion kann nicht rückgängig gemacht werden.",
-        "updateAvailable": "Update verfügbar: v{{version}}"
+        "updateAvailable": "Update verfügbar: v{{version}}",
+        "permanentDeleteConfirm": "\"{{title}}\" dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+        "emptyTrashConfirm": "Papierkorb leeren ({{count}} Notizen)? Diese Aktion kann nicht rückgängig gemacht werden."
     },
     "sections": {
         "folderLocation": "Ordnerstandort",
@@ -272,7 +280,8 @@
         "openNotesFolder": "Notizen-Ordner öffnen",
         "switchToLight": "Design auf Hell umschalten",
         "switchToDark": "Design auf Dunkel umschalten",
-        "switchToSystem": "Design auf System umschalten"
+        "switchToSystem": "Design auf System umschalten",
+        "openTrash": "Papierkorb öffnen"
     },
     "slashCommands": {
         "text": "Text",
@@ -362,5 +371,18 @@
     "dateFormats": {
         "yesterday": "Gestern",
         "daysAgo": "vor {{count}} Tagen"
+    },
+    "trash": {
+        "title": "Papierkorb",
+        "empty": "Papierkorb ist leer",
+        "loading": "Wird geladen...",
+        "emptyTrash": "Papierkorb leeren",
+        "restore": "Wiederherstellen",
+        "deletePermanently": "Dauerhaft löschen"
+    },
+    "backlinks": {
+        "title": "Backlinks",
+        "empty": "Keine Backlinks gefunden",
+        "selectNote": "Wählen Sie eine Notiz aus, um Backlinks anzuzeigen"
     }
 }

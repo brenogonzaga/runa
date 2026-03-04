@@ -179,12 +179,20 @@
         "reloadFailed": "Error al recargar",
         "saveToFolderFailed": "Error al guardar en carpeta",
         "deleteFailed": "Error al eliminar nota",
-        "filepathCopied": "Ruta del archivo copiada"
+        "filepathCopied": "Ruta del archivo copiada",
+        "trashLoadError": "Error al cargar la papelera",
+        "noteRestored": "Nota restaurada",
+        "restoreError": "Error al restaurar la nota",
+        "notePermanentlyDeleted": "Nota eliminada permanentemente",
+        "trashEmptied": "Papelera vaciada",
+        "emptyTrashError": "Error al vaciar la papelera"
     },
     "dialogs": {
         "deleteNote": "¿Eliminar nota?",
         "deleteDescription": "Esto eliminará permanentemente la nota y todo su contenido. Esta acción no se puede deshacer.",
-        "updateAvailable": "Actualización Disponible: v{{version}}"
+        "updateAvailable": "Actualización Disponible: v{{version}}",
+        "permanentDeleteConfirm": "¿Eliminar permanentemente \"{{title}}\"? Esta acción no se puede deshacer.",
+        "emptyTrashConfirm": "¿Vaciar papelera ({{count}} notas)? Esta acción no se puede deshacer."
     },
     "sections": {
         "folderLocation": "Ubicación de Carpeta",
@@ -272,7 +280,8 @@
         "openNotesFolder": "Abrir Carpeta de Notas",
         "switchToLight": "Cambiar Tema a Modo Claro",
         "switchToDark": "Cambiar Tema a Modo Oscuro",
-        "switchToSystem": "Cambiar Tema a Modo Sistema"
+        "switchToSystem": "Cambiar Tema a Modo Sistema",
+        "openTrash": "Abrir Papelera"
     },
     "slashCommands": {
         "text": "Texto",
@@ -362,5 +371,18 @@
     "dateFormats": {
         "yesterday": "Ayer",
         "daysAgo": "hace {{count}} días"
+    },
+    "trash": {
+        "title": "Papelera",
+        "empty": "La papelera está vacía",
+        "loading": "Cargando...",
+        "emptyTrash": "Vaciar papelera",
+        "restore": "Restaurar",
+        "deletePermanently": "Eliminar permanentemente"
+    },
+    "backlinks": {
+        "title": "Backlinks",
+        "empty": "No se encontraron backlinks",
+        "selectNote": "Selecciona una nota para ver los backlinks"
     }
 }

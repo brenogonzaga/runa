@@ -33,6 +33,26 @@ export async function deleteNote(id: string): Promise<void> {
   return invoke("delete_note", { id });
 }
 
+export async function listTrash(): Promise<NoteMetadata[]> {
+  return invoke("list_trash");
+}
+
+export async function restoreNote(id: string): Promise<void> {
+  return invoke("restore_note", { id });
+}
+
+export async function emptyTrash(): Promise<void> {
+  return invoke("empty_trash");
+}
+
+export async function permanentlyDeleteNote(id: string): Promise<void> {
+  return invoke("permanently_delete_note", { id });
+}
+
+export async function getBacklinks(noteId: string): Promise<NoteMetadata[]> {
+  return invoke("get_backlinks", { noteId });
+}
+
 export async function createNote(): Promise<Note> {
   return invoke("create_note");
 }
@@ -63,6 +83,7 @@ export interface SearchResult {
   preview: string;
   modified: number;
   score: number;
+  tags?: string[];
 }
 
 export async function searchNotes(query: string): Promise<SearchResult[]> {
@@ -81,4 +102,24 @@ export async function startFileWatcher(): Promise<void> {
     // Command may not exist on mobile builds
     console.debug("File watcher not available on this platform");
   }
+}
+
+// Template management
+export async function listTemplates(): Promise<import("../types/note").TemplateMetadata[]> {
+  return invoke("list_templates");
+}
+
+export async function createNoteFromTemplate(
+  templateName: string,
+  noteTitle?: string,
+): Promise<NoteMetadata> {
+  return invoke("create_note_from_template", { templateName, noteTitle });
+}
+
+export async function saveTemplate(name: string, content: string): Promise<void> {
+  return invoke("save_template", { name, content });
+}
+
+export async function deleteTemplate(name: string): Promise<void> {
+  return invoke("delete_template", { name });
 }

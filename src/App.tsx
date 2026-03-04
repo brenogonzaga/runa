@@ -15,6 +15,8 @@ import { SpinnerIcon, ClaudeIcon, CodexIcon } from "./components/icons";
 import { AiEditModal } from "./components/ai/AiEditModal";
 import { AiResponseToast } from "./components/ai/AiResponseToast";
 import { PreviewApp } from "./components/preview/PreviewApp";
+import { TrashModal } from "./components/trash/TrashModal";
+import { BacklinksPanel } from "./components/backlinks/BacklinksPanel";
 import { check as checkForUpdate, type Update } from "@tauri-apps/plugin-updater";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import * as aiService from "./services/ai";
@@ -64,6 +66,8 @@ function AppContent() {
   const [aiEditing, setAiEditing] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [aiProvider, setAiProvider] = useState<AiProvider>("claude");
+  const [trashModalOpen, setTrashModalOpen] = useState(false);
+  const [backlinksVisible, setBacklinksVisible] = useState(false);
   const editorRef = useRef<TiptapEditor | null>(null);
   const manualBackRef = useRef(false);
 
@@ -94,6 +98,10 @@ function AppContent() {
       return !prev;
     });
   }, [selectedNoteId]);
+
+  const toggleBacklinks = useCallback(() => {
+    setBacklinksVisible((prev) => !prev);
+  }, []);
 
   const toggleSettings = useCallback(() => {
     setView((prev) => (prev === "settings" ? "notes" : "settings"));
@@ -381,6 +389,7 @@ function AppContent() {
               <Sidebar
                 onOpenSettings={toggleSettings}
                 onNoteClick={() => setMobileNoteClick((prev) => prev + 1)}
+                onOpenTrash={() => setTrashModalOpen(true)}
               />
             </div>
             {/* Editor panel: full-screen on mobile, flex-1 on desktop */}
@@ -394,6 +403,8 @@ function AppContent() {
                 onToggleSidebar={toggleSidebar}
                 sidebarVisible={sidebarVisible && !focusMode}
                 focusMode={focusMode}
+                onToggleBacklinks={toggleBacklinks}
+                backlinksVisible={backlinksVisible}
                 onMobileBack={() => {
                   // On mobile, when going back to list, set flag to prevent auto-switch back to editor
                   manualBackRef.current = true;
@@ -404,6 +415,16 @@ function AppContent() {
                 }}
               />
             </div>
+            {/* Backlinks panel: hidden on mobile, toggleable on desktop */}
+            {backlinksVisible && !focusMode && (
+              <div className="hidden md:block md:w-64 overflow-hidden">
+                <BacklinksPanel
+                  noteId={selectedNoteId}
+                  onNoteClick={(id) => selectNote(id)}
+                  onClose={() => setBacklinksVisible(false)}
+                />
+              </div>
+            )}
           </>
         )}
       </div>
@@ -423,6 +444,7 @@ function AppContent() {
         open={paletteOpen}
         onClose={handleClosePalette}
         onOpenSettings={toggleSettings}
+        onOpenTrash={() => setTrashModalOpen(true)}
         onOpenAiModal={(provider) => {
           setAiProvider(provider);
           setAiModalOpen(true);
@@ -437,6 +459,14 @@ function AppContent() {
         onBack={handleBackToPalette}
         onExecute={handleAiEdit}
         isExecuting={aiEditing}
+      />
+      <TrashModal
+        isOpen={trashModalOpen}
+        onClose={() => setTrashModalOpen(false)}
+        onNoteRestored={() => {
+          // Refresh notes list after restore
+          window.location.reload();
+        }}
       />
 
       {/* AI Editing Overlay */}

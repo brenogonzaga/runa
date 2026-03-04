@@ -101,6 +101,7 @@ interface ListItemProps {
   meta?: string;
   isSelected?: boolean;
   isPinned?: boolean;
+  tags?: string[];
   onClick?: () => void;
   /** Optional status icon to display next to meta */
 }
@@ -111,6 +112,7 @@ export function ListItem({
   meta,
   isSelected = false,
   isPinned = false,
+  tags,
   onClick,
   onContextMenu,
 }: ListItemProps & { onContextMenu?: (e: React.MouseEvent) => void }) {
@@ -162,6 +164,21 @@ export function ListItem({
           {hasSubtitle ? cleanSubtitle : "\u00A0"}
         </p>
       </div>
+      {tags && tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              className={cn(
+                "inline-flex items-center px-1.5 py-0.5 text-2xs font-medium rounded",
+                "bg-accent/10 text-accent",
+              )}
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

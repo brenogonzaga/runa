@@ -39,7 +39,16 @@ import {
 } from "../icons";
 import { mod, shift } from "../../lib/platform";
 import type { AiProvider } from "../../services/ai";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/AlertDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/AlertDialog";
 
 interface Command {
   id: string;
@@ -53,6 +62,7 @@ interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
   onOpenSettings?: () => void;
+  onOpenTrash?: () => void;
   onOpenAiModal?: (provider: AiProvider) => void;
   focusMode?: boolean;
   onToggleFocusMode?: () => void;
@@ -63,6 +73,7 @@ export function CommandPalette({
   open,
   onClose,
   onOpenSettings,
+  onOpenTrash,
   onOpenAiModal,
   focusMode,
   onToggleFocusMode,
@@ -79,6 +90,8 @@ export function CommandPalette({
     unpinNote,
     notesFolder,
   } = useNotes();
+
+  const handleNewNote = createNote;
   const { theme, setTheme } = useTheme();
   const { status, gitAvailable, commit, sync, isSyncing } = useGit();
   const { t } = useTranslation();
@@ -109,7 +122,7 @@ export function CommandPalette({
         shortcut: `${mod} N`,
         icon: <AddNoteIcon className="w-4.5 h-4.5 stroke-[1.5]" />,
         action: () => {
-          createNote();
+          handleNewNote();
           onClose();
         },
       },
@@ -370,17 +383,31 @@ export function CommandPalette({
     }
 
     // Settings and theme commands at the bottom
-    baseCommands.push(
-      {
-        id: "settings",
-        label: t("common.settings"),
-        shortcut: `${mod} ,`,
-        icon: <SettingsIcon className="w-4.5 h-4.5 stroke-[1.5]" />,
+    baseCommands.push({
+      id: "settings",
+      label: t("common.settings"),
+      shortcut: `${mod} ,`,
+      icon: <SettingsIcon className="w-4.5 h-4.5 stroke-[1.5]" />,
+      action: () => {
+        onOpenSettings?.();
+        onClose();
+      },
+    });
+
+    // Trash command
+    if (onOpenTrash) {
+      baseCommands.push({
+        id: "open-trash",
+        label: t("commands.openTrash"),
+        icon: <TrashIcon className="w-4.5 h-4.5 stroke-[1.5]" />,
         action: () => {
-          onOpenSettings?.();
+          onOpenTrash();
           onClose();
         },
-      },
+      });
+    }
+
+    baseCommands.push(
       {
         id: "theme-light",
         label: t("commands.switchToLight"),
@@ -417,6 +444,7 @@ export function CommandPalette({
     deleteNote,
     onClose,
     onOpenSettings,
+    onOpenTrash,
     onOpenAiModal,
     setTheme,
     theme,

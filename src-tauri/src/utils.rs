@@ -22,6 +22,15 @@ static LINK_RE: Lazy<Regex> =
 static LIST_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^(\s*[-+*]|\s*\d+\.)\s+").expect("LIST_RE: Invalid regex pattern"));
 
+/// Regex for matching hashtags: #tag (word starting with #)
+static TAG_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"#([a-zA-Z0-9_-]+)").expect("TAG_RE: Invalid regex pattern"));
+
+/// Regex for matching wikilinks: [[note name]] or [[note name|display text]]
+static WIKILINK_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]").expect("WIKILINK_RE: Invalid regex pattern")
+});
+
 /// Directories to exclude from note discovery and ID resolution.
 pub(crate) const EXCLUDED_DIRS: &[&str] = &[".git", ".runa", ".obsidian", ".trash", "assets"];
 
@@ -168,6 +177,34 @@ pub(crate) fn expand_note_name_template(template: &str) -> String {
     result
 }
 
+/// Expands template variables in note content ({{variable}} format)
+pub(crate) fn expand_template_content(content: &str, title: Option<&str>) -> String {
+    use chrono::Local;
+
+    let mut result = content.to_string();
+    let now = Local::now();
+
+    // Date/time variables
+    result = result.replace("{{timestamp}}", &now.timestamp().to_string());
+    result = result.replace("{{date}}", &now.format("%Y-%m-%d").to_string());
+    result = result.replace("{{year}}", &now.format("%Y").to_string());
+    result = result.replace("{{month}}", &now.format("%m").to_string());
+    result = result.replace("{{day}}", &now.format("%d").to_string());
+    result = result.replace("{{time}}", &now.format("%H:%M:%S").to_string());
+    result = result.replace("{{datetime}}", &now.format("%Y-%m-%d %H:%M:%S").to_string());
+
+    // Day/month names
+    result = result.replace("{{weekday}}", &now.format("%A").to_string());
+    result = result.replace("{{month_name}}", &now.format("%B").to_string());
+
+    // Title variable
+    if let Some(t) = title {
+        result = result.replace("{{title}}", t);
+    }
+
+    result
+}
+
 /// Extracts a display title from a note ID (filename).
 pub(crate) fn extract_title_from_id(id: &str) -> String {
     let filename = id.rsplit('/').next().unwrap_or(id);
@@ -225,6 +262,39 @@ pub(crate) fn extract_title(content: &str) -> String {
         }
     }
     "Untitled".to_string()
+}
+
+/// Extract hashtags from markdown content
+pub(crate) fn extract_tags(content: &str) -> Vec<String> {
+    let mut tags = std::collections::HashSet::new();
+
+    for cap in TAG_RE.captures_iter(content) {
+        if let Some(tag) = cap.get(1) {
+            tags.insert(tag.as_str().to_lowercase());
+        }
+    }
+
+    let mut tags_vec: Vec<String> = tags.into_iter().collect();
+    tags_vec.sort();
+    tags_vec
+}
+
+/// Extract wikilinks from markdown content ([[link]] or [[link|display]])
+pub(crate) fn extract_wikilinks(content: &str) -> Vec<String> {
+    let mut links = std::collections::HashSet::new();
+
+    for cap in WIKILINK_RE.captures_iter(content) {
+        if let Some(link) = cap.get(1) {
+            let link_text = link.as_str().trim();
+            if !link_text.is_empty() {
+                links.insert(link_text.to_string());
+            }
+        }
+    }
+
+    let mut links_vec: Vec<String> = links.into_iter().collect();
+    links_vec.sort();
+    links_vec
 }
 
 // Utility: Generate preview from content (strip markdown formatting)
@@ -371,8 +441,6 @@ macro_rules! safe_lock {
         })
     };
 }
-
-pub(crate) use safe_lock;
 
 // Clean up old entries from debounce map (entries older than 5 seconds) - desktop only
 #[cfg(desktop)]

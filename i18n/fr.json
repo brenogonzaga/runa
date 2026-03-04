@@ -179,12 +179,20 @@
         "reloadFailed": "Échec du rechargement",
         "saveToFolderFailed": "Échec de l'enregistrement dans le dossier",
         "deleteFailed": "Échec de la suppression de la note",
-        "filepathCopied": "Chemin du fichier copié dans le presse-papiers"
+        "filepathCopied": "Chemin du fichier copié dans le presse-papiers",
+        "trashLoadError": "Impossible de charger la corbeille",
+        "noteRestored": "Note restaurée",
+        "restoreError": "Erreur lors de la restauration de la note",
+        "notePermanentlyDeleted": "Note supprimée définitivement",
+        "trashEmptied": "Corbeille vidée",
+        "emptyTrashError": "Impossible de vider la corbeille"
     },
     "dialogs": {
         "deleteNote": "Supprimer la note ?",
         "deleteDescription": "Ceci supprimera définitivement la note et tout son contenu. Cette action ne peut pas être annulée.",
-        "updateAvailable": "Mise à Jour Disponible : v{{version}}"
+        "updateAvailable": "Mise à Jour Disponible : v{{version}}",
+        "permanentDeleteConfirm": "Supprimer définitivement \"{{title}}\" ? Cette action est irréversible.",
+        "emptyTrashConfirm": "Vider la corbeille ({{count}} notes) ? Cette action est irréversible."
     },
     "sections": {
         "folderLocation": "Emplacement du Dossier",
@@ -272,7 +280,8 @@
         "openNotesFolder": "Ouvrir le Dossier des Notes",
         "switchToLight": "Changer le Thème en Mode Clair",
         "switchToDark": "Changer le Thème en Mode Sombre",
-        "switchToSystem": "Changer le Thème en Mode Système"
+        "switchToSystem": "Changer le Thème en Mode Système",
+        "openTrash": "Ouvrir la Corbeille"
     },
     "slashCommands": {
         "text": "Texte",
@@ -362,5 +371,18 @@
     "dateFormats": {
         "yesterday": "Hier",
         "daysAgo": "il y a {{count}} jours"
+    },
+    "trash": {
+        "title": "Corbeille",
+        "empty": "La corbeille est vide",
+        "loading": "Chargement...",
+        "emptyTrash": "Vider la corbeille",
+        "restore": "Restaurer",
+        "deletePermanently": "Supprimer définitivement"
+    },
+    "backlinks": {
+        "title": "Backlinks",
+        "empty": "Aucun backlink trouvé",
+        "selectNote": "Sélectionnez une note pour voir les backlinks"
     }
 }

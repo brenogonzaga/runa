@@ -7,6 +7,8 @@ pub struct NoteMetadata {
     pub title: String,
     pub preview: String,
     pub modified: i64,
+    #[serde(default)]
+    pub tags: Vec<String>,
 }
 
 // Full note content
@@ -97,6 +99,17 @@ pub struct SearchResult {
     pub preview: String,
     pub modified: i64,
     pub score: f32,
+    #[serde(default)]
+    pub tags: Vec<String>,
+}
+
+// Template metadata for list display
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TemplateMetadata {
+    pub name: String,
+    pub title: String,
+    pub preview: String,
+    pub modified: i64,
 }
 
 // AI execution result (desktop only - AI CLIs not available on mobile)
