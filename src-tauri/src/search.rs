@@ -60,7 +60,10 @@ impl SearchIndex {
     }
 
     pub fn index_note(&self, id: &str, title: &str, content: &str, modified: i64) -> Result<()> {
-        let mut writer = self.writer.lock().expect("search writer mutex");
+        let mut writer = self
+            .writer
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Failed to acquire search writer lock: {}", e))?;
 
         let id_term = tantivy::Term::from_field_text(self.id_field, id);
         writer.delete_term(id_term);
@@ -77,7 +80,10 @@ impl SearchIndex {
     }
 
     pub fn delete_note(&self, id: &str) -> Result<()> {
-        let mut writer = self.writer.lock().expect("search writer mutex");
+        let mut writer = self
+            .writer
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Failed to acquire search writer lock: {}", e))?;
         let id_term = tantivy::Term::from_field_text(self.id_field, id);
         writer.delete_term(id_term);
         writer.commit()?;
@@ -136,7 +142,10 @@ impl SearchIndex {
     }
 
     pub fn rebuild_index(&self, notes_folder: &PathBuf) -> Result<()> {
-        let mut writer = self.writer.lock().expect("search writer mutex");
+        let mut writer = self
+            .writer
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Failed to acquire search writer lock: {}", e))?;
         writer.delete_all_documents()?;
 
         if notes_folder.exists() {
@@ -192,7 +201,10 @@ pub(crate) async fn search_notes(
     }
 
     let indexed_result = {
-        let index = state.search_index.lock().expect("search index mutex");
+        let index = state
+            .search_index
+            .lock()
+            .map_err(|e| format!("Failed to acquire search index lock: {}", e))?;
         (*index).as_ref().map(|search_index| {
             search_index
                 .search(&trimmed_query, 20)
@@ -220,7 +232,10 @@ async fn fallback_search(
     state: &State<'_, AppState>,
 ) -> Result<Vec<SearchResult>, String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config.notes_folder.clone()
     };
 
@@ -230,7 +245,10 @@ async fn fallback_search(
     };
 
     let cache_data: Vec<(String, String, String, i64)> = {
-        let cache = state.notes_cache.read().expect("cache read lock");
+        let cache = state
+            .notes_cache
+            .read()
+            .map_err(|e| format!("Failed to read notes cache: {}", e))?;
         cache
             .values()
             .map(|note| {
@@ -295,7 +313,10 @@ async fn fallback_search(
 #[tauri::command]
 pub(crate) fn rebuild_search_index(app: AppHandle, state: State<AppState>) -> Result<(), String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config
             .notes_folder
             .clone()
@@ -309,7 +330,10 @@ pub(crate) fn rebuild_search_index(app: AppHandle, state: State<AppState>) -> Re
         .rebuild_index(&PathBuf::from(&folder))
         .map_err(|e| e.to_string())?;
 
-    let mut index = state.search_index.lock().expect("search index mutex");
+    let mut index = state
+        .search_index
+        .lock()
+        .map_err(|e| format!("Failed to acquire search index lock: {}", e))?;
     *index = Some(search_index);
 
     Ok(())

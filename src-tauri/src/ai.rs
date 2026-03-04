@@ -6,7 +6,56 @@ use std::{
 
 use tauri::State;
 
-use crate::{state::AppState, types::AiExecutionResult};
+use crate::{rate_limit::RateLimiter, state::AppState, types::AiExecutionResult};
+
+use once_cell::sync::Lazy;
+
+/// Rate limiter for AI operations: 5 requests per minute
+static AI_RATE_LIMITER: Lazy<RateLimiter> = Lazy::new(|| RateLimiter::new(5, 60));
+
+/// Maximum allowed length for AI prompts (100KB)
+const MAX_PROMPT_LENGTH: usize = 100_000;
+
+/// Maximum allowed length for individual CLI arguments (to prevent DoS)
+const MAX_ARG_LENGTH: usize = 10_000;
+
+/// Validate that the CLI command is on the whitelist
+fn validate_cli_command(command: &str) -> Result<(), String> {
+    const ALLOWED_COMMANDS: &[&str] = &["claude", "codex"];
+
+    if !ALLOWED_COMMANDS.contains(&command) {
+        return Err(format!("Command '{}' is not allowed", command));
+    }
+
+    Ok(())
+}
+
+/// Validate CLI arguments length (DoS prevention only)
+fn validate_cli_args(args: &[String]) -> Result<(), String> {
+    for arg in args {
+        if arg.len() > MAX_ARG_LENGTH {
+            return Err(format!("Argument too long (max {} chars)", MAX_ARG_LENGTH));
+        }
+    }
+
+    Ok(())
+}
+
+/// Validate prompt input
+fn validate_prompt(prompt: &str) -> Result<(), String> {
+    if prompt.is_empty() {
+        return Err("Prompt cannot be empty".to_string());
+    }
+
+    if prompt.len() > MAX_PROMPT_LENGTH {
+        return Err(format!(
+            "Prompt too large (max {} bytes)",
+            MAX_PROMPT_LENGTH
+        ));
+    }
+
+    Ok(())
+}
 
 /// Create a `Command` that hides the console window on Windows.
 fn no_window_cmd(program: &str) -> Command {
@@ -100,7 +149,7 @@ pub(crate) async fn ai_check_codex_cli() -> Result<bool, String> {
 }
 
 /// Shared AI CLI execution: spawns `command` with `args`, writes `stdin_input` to stdin,
-/// and returns the result with a 5-minute timeout.
+/// and returns the result with a 2-minute timeout.
 async fn execute_ai_cli(
     cli_name: &str,
     command: String,
@@ -111,8 +160,18 @@ async fn execute_ai_cli(
     use std::io::Write;
     use std::process::{Child, Stdio};
 
+    // Validate command is on whitelist
+    validate_cli_command(&command)?;
+
+    // Validate arguments (DoS prevention only)
+    validate_cli_args(&args)?;
+
+    // Validate prompt
+    validate_prompt(&stdin_input)?;
+
     let cli_name = cli_name.to_string();
-    let timeout_duration = std::time::Duration::from_secs(300);
+    // Reduced timeout from 5 minutes to 2 minutes for better UX
+    let timeout_duration = std::time::Duration::from_secs(120);
     let shared_child: Arc<Mutex<Option<Child>>> = Arc::new(Mutex::new(None));
     let child_for_task = Arc::clone(&shared_child);
     let cli_name_task = cli_name.clone();
@@ -275,7 +334,7 @@ async fn execute_ai_cli(
             AiExecutionResult {
                 success: false,
                 output: String::new(),
-                error: Some(format!("{} CLI timed out after 5 minutes", cli_name)),
+                error: Some(format!("{} CLI timed out after 2 minutes", cli_name)),
             }
         }
     };
@@ -289,6 +348,12 @@ pub(crate) async fn ai_execute_claude(
     prompt: String,
     state: tauri::State<'_, AppState>,
 ) -> Result<AiExecutionResult, String> {
+    // Rate limiting
+    AI_RATE_LIMITER.check("claude")?;
+
+    // Validate prompt
+    validate_prompt(&prompt)?;
+
     let path = PathBuf::from(&file_path);
     let extension = path
         .extension()
@@ -301,7 +366,10 @@ pub(crate) async fn ai_execute_claude(
     }
 
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config
             .notes_folder
             .clone()
@@ -340,6 +408,12 @@ pub(crate) async fn ai_execute_codex(
     prompt: String,
     state: State<'_, AppState>,
 ) -> Result<AiExecutionResult, String> {
+    // Rate limiting
+    AI_RATE_LIMITER.check("codex")?;
+
+    // Validate prompt
+    validate_prompt(&prompt)?;
+
     // Validate file extension
     let path = PathBuf::from(&file_path);
     let extension = path
@@ -354,7 +428,10 @@ pub(crate) async fn ai_execute_codex(
 
     // Validate path is within notes folder
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config
             .notes_folder
             .clone()

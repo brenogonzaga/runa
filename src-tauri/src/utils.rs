@@ -1,11 +1,26 @@
 use std::path::{Path, PathBuf};
 
+use once_cell::sync::Lazy;
+use regex::Regex;
+
 #[cfg(desktop)]
 use std::collections::HashMap;
 #[cfg(desktop)]
 use std::sync::Mutex;
 #[cfg(desktop)]
 use std::time::Instant;
+
+/// Regex for matching markdown images: ![alt](url)
+static IMG_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"!\[([^\]]*)\]\([^)]+\)").expect("IMG_RE: Invalid regex pattern"));
+
+/// Regex for matching markdown links: [text](url)
+static LINK_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"\[([^\]]+)\]\([^)]+\)").expect("LINK_RE: Invalid regex pattern"));
+
+/// Regex for matching list markers at start of line
+static LIST_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^(\s*[-+*]|\s*\d+\.)\s+").expect("LIST_RE: Invalid regex pattern"));
 
 /// Directories to exclude from note discovery and ID resolution.
 pub(crate) const EXCLUDED_DIRS: &[&str] = &[".git", ".runa", ".obsidian", ".trash", "assets"];
@@ -295,13 +310,9 @@ pub(crate) fn strip_markdown(text: &str) -> String {
         }
     }
 
-    // Remove images ![alt](url)
-    let img_re = regex::Regex::new(r"!\[([^\]]*)\]\([^)]+\)").unwrap();
-    result = img_re.replace_all(&result, "$1").to_string();
+    result = IMG_RE.replace_all(&result, "$1").to_string();
 
-    // Remove links [text](url)
-    let link_re = regex::Regex::new(r"\[([^\]]+)\]\([^)]+\)").unwrap();
-    result = link_re.replace_all(&result, "$1").to_string();
+    result = LINK_RE.replace_all(&result, "$1").to_string();
 
     // Remove italic (*text*)
     while let Some(start) = result.find('*') {
@@ -346,17 +357,29 @@ pub(crate) fn strip_markdown(text: &str) -> String {
         .replace("- [x] ", "")
         .replace("- [X] ", "");
 
-    // Remove list markers at start
-    let list_re = regex::Regex::new(r"^(\s*[-+*]|\s*\d+\.)\s+").unwrap();
-    result = list_re.replace(&result, "").to_string();
+    result = LIST_RE.replace(&result, "").to_string();
 
     result.trim().to_string()
 }
 
+/// Safe mutex lock with logging. Returns Result instead of panicking.
+macro_rules! safe_lock {
+    ($mutex:expr, $name:expr) => {
+        $mutex.lock().map_err(|e| {
+            eprintln!("Failed to acquire {} lock: {}", $name, e);
+            format!("Lock acquisition failed: {}", $name)
+        })
+    };
+}
+
+pub(crate) use safe_lock;
+
 // Clean up old entries from debounce map (entries older than 5 seconds) - desktop only
 #[cfg(desktop)]
 pub(crate) fn cleanup_debounce_map(map: &Mutex<HashMap<PathBuf, Instant>>) {
-    let mut map = map.lock().expect("debounce map mutex");
-    let now = Instant::now();
-    map.retain(|_, last| now.duration_since(*last) < std::time::Duration::from_secs(5));
+    // Use safe_lock! macro to avoid panic on poisoned mutex
+    if let Ok(mut map) = safe_lock!(map, "debounce_map") {
+        let now = Instant::now();
+        map.retain(|_, last| now.duration_since(*last) < std::time::Duration::from_secs(5));
+    }
 }

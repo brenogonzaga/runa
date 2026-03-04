@@ -48,9 +48,8 @@ pub(crate) fn get_notes_folder(state: State<AppState>) -> Option<String> {
     state
         .app_config
         .read()
-        .expect("app_config read lock")
-        .notes_folder
-        .clone()
+        .ok()
+        .and_then(|config| config.notes_folder.clone())
 }
 
 #[tauri::command]
@@ -83,15 +82,24 @@ pub(crate) fn set_notes_folder(
     let settings = load_settings(&normalized_path);
 
     {
-        let mut app_config = state.app_config.write().expect("app_config write lock");
+        let mut app_config = state
+            .app_config
+            .write()
+            .map_err(|e| format!("Failed to write app config: {}", e))?;
         app_config.notes_folder = Some(normalized_path.clone());
     }
     {
-        let mut current_settings = state.settings.write().expect("settings write lock");
+        let mut current_settings = state
+            .settings
+            .write()
+            .map_err(|e| format!("Failed to write settings: {}", e))?;
         *current_settings = settings;
     }
     {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         save_app_config(&app, &app_config).map_err(|e| e.to_string())?;
     }
 
@@ -101,8 +109,9 @@ pub(crate) fn set_notes_folder(
     if let Ok(index_path) = get_search_index_path(&app) {
         if let Ok(search_index) = SearchIndex::new(&index_path) {
             let _ = search_index.rebuild_index(&path_buf);
-            let mut index = state.search_index.lock().expect("search index mutex");
-            *index = Some(search_index);
+            if let Ok(mut index) = state.search_index.lock() {
+                *index = Some(search_index);
+            }
         }
     }
 
@@ -112,7 +121,10 @@ pub(crate) fn set_notes_folder(
 #[tauri::command]
 pub(crate) async fn list_notes(state: State<'_, AppState>) -> Result<Vec<NoteMetadata>, String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config
             .notes_folder
             .clone()
@@ -169,7 +181,10 @@ pub(crate) async fn list_notes(state: State<'_, AppState>) -> Result<Vec<NoteMet
         .collect();
 
     let pinned_ids: HashSet<String> = {
-        let settings = state.settings.read().expect("settings read lock");
+        let settings = state
+            .settings
+            .read()
+            .map_err(|e| format!("Failed to read settings: {}", e))?;
         settings
             .pinned_note_ids
             .as_ref()
@@ -189,7 +204,10 @@ pub(crate) async fn list_notes(state: State<'_, AppState>) -> Result<Vec<NoteMet
     });
 
     {
-        let mut cache = state.notes_cache.write().expect("cache write lock");
+        let mut cache = state
+            .notes_cache
+            .write()
+            .map_err(|e| format!("Failed to write cache: {}", e))?;
         cache.clear();
         for note in &notes {
             cache.insert(note.id.clone(), note.clone());
@@ -202,7 +220,10 @@ pub(crate) async fn list_notes(state: State<'_, AppState>) -> Result<Vec<NoteMet
 #[tauri::command]
 pub(crate) async fn read_note(id: String, state: State<'_, AppState>) -> Result<Note, String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config
             .notes_folder
             .clone()
@@ -243,7 +264,10 @@ pub(crate) async fn save_note(
     state: State<'_, AppState>,
 ) -> Result<Note, String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config
             .notes_folder
             .clone()
@@ -324,18 +348,20 @@ pub(crate) async fn save_note(
         .unwrap_or(0);
 
     {
-        let index = state.search_index.lock().expect("search index mutex");
-        if let Some(ref search_index) = *index {
-            if let Some((ref old_id_str, _)) = old_id {
-                let _ = search_index.delete_note(old_id_str);
+        if let Ok(index) = state.search_index.lock() {
+            if let Some(ref search_index) = *index {
+                if let Some((ref old_id_str, _)) = old_id {
+                    let _ = search_index.delete_note(old_id_str);
+                }
+                let _ = search_index.index_note(&final_id, &title, &content, modified);
             }
-            let _ = search_index.index_note(&final_id, &title, &content, modified);
         }
     }
 
     if let Some((ref old_id_str, _)) = old_id {
-        let mut cache = state.notes_cache.write().expect("cache write lock");
-        cache.remove(old_id_str);
+        if let Ok(mut cache) = state.notes_cache.write() {
+            cache.remove(old_id_str);
+        }
     }
 
     Ok(Note {
@@ -350,7 +376,10 @@ pub(crate) async fn save_note(
 #[tauri::command]
 pub(crate) async fn delete_note(id: String, state: State<'_, AppState>) -> Result<(), String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config
             .notes_folder
             .clone()
@@ -366,14 +395,16 @@ pub(crate) async fn delete_note(id: String, state: State<'_, AppState>) -> Resul
     }
 
     {
-        let index = state.search_index.lock().expect("search index mutex");
-        if let Some(ref search_index) = *index {
-            let _ = search_index.delete_note(&id);
+        if let Ok(index) = state.search_index.lock() {
+            if let Some(ref search_index) = *index {
+                let _ = search_index.delete_note(&id);
+            }
         }
     }
     {
-        let mut cache = state.notes_cache.write().expect("cache write lock");
-        cache.remove(&id);
+        if let Ok(mut cache) = state.notes_cache.write() {
+            cache.remove(&id);
+        }
     }
 
     Ok(())
@@ -382,7 +413,10 @@ pub(crate) async fn delete_note(id: String, state: State<'_, AppState>) -> Resul
 #[tauri::command]
 pub(crate) async fn create_note(state: State<'_, AppState>) -> Result<Note, String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config
             .notes_folder
             .clone()
@@ -391,7 +425,10 @@ pub(crate) async fn create_note(state: State<'_, AppState>) -> Result<Note, Stri
     let folder_path = PathBuf::from(&folder);
 
     let template = {
-        let settings = state.settings.read().expect("settings read lock");
+        let settings = state
+            .settings
+            .read()
+            .map_err(|e| format!("Failed to read settings: {}", e))?;
         settings
             .default_note_name
             .clone()
@@ -443,9 +480,10 @@ pub(crate) async fn create_note(state: State<'_, AppState>) -> Result<Note, Stri
         .unwrap_or(0);
 
     {
-        let index = state.search_index.lock().expect("search index mutex");
-        if let Some(ref search_index) = *index {
-            let _ = search_index.index_note(&final_id, &display_title, &content, modified);
+        if let Ok(index) = state.search_index.lock() {
+            if let Some(ref search_index) = *index {
+                let _ = search_index.index_note(&final_id, &display_title, &content, modified);
+            }
         }
     }
 
@@ -459,8 +497,12 @@ pub(crate) async fn create_note(state: State<'_, AppState>) -> Result<Note, Stri
 }
 
 #[tauri::command]
-pub(crate) fn get_settings(state: State<AppState>) -> Settings {
-    state.settings.read().expect("settings read lock").clone()
+pub(crate) fn get_settings(state: State<AppState>) -> Result<Settings, String> {
+    state
+        .settings
+        .read()
+        .map(|s| s.clone())
+        .map_err(|e| format!("Failed to read settings: {}", e))
 }
 
 #[tauri::command]
@@ -469,7 +511,10 @@ pub(crate) fn update_settings(
     state: State<AppState>,
 ) -> Result<(), String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config
             .notes_folder
             .clone()
@@ -477,11 +522,17 @@ pub(crate) fn update_settings(
     };
 
     {
-        let mut settings = state.settings.write().expect("settings write lock");
+        let mut settings = state
+            .settings
+            .write()
+            .map_err(|e| format!("Failed to write settings: {}", e))?;
         *settings = new_settings;
     }
 
-    let settings = state.settings.read().expect("settings read lock");
+    let settings = state
+        .settings
+        .read()
+        .map_err(|e| format!("Failed to read settings: {}", e))?;
     save_settings(&folder, &settings).map_err(|e| e.to_string())?;
 
     Ok(())
@@ -584,7 +635,10 @@ pub(crate) async fn import_file_to_folder(
     }
 
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config
             .notes_folder
             .clone()
@@ -639,9 +693,10 @@ pub(crate) async fn import_file_to_folder(
         .unwrap_or(0);
 
     {
-        let index = state.search_index.lock().expect("search index mutex");
-        if let Some(ref search_index) = *index {
-            let _ = search_index.index_note(&final_id, &extracted_title, &content, modified);
+        if let Ok(index) = state.search_index.lock() {
+            if let Some(ref search_index) = *index {
+                let _ = search_index.index_note(&final_id, &extracted_title, &content, modified);
+            }
         }
     }
 
@@ -661,8 +716,9 @@ pub(crate) async fn import_file_to_folder(
     };
 
     {
-        let mut cache = state.notes_cache.write().expect("cache write lock");
-        cache.insert(metadata.id.clone(), metadata.clone());
+        if let Ok(mut cache) = state.notes_cache.write() {
+            cache.insert(metadata.id.clone(), metadata.clone());
+        }
     }
 
     let _ = app.emit_to("main", "select-note", &metadata.id);

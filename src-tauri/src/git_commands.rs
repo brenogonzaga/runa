@@ -14,7 +14,10 @@ pub(crate) async fn git_is_available() -> bool {
 #[tauri::command]
 pub(crate) async fn git_get_status(state: State<'_, AppState>) -> Result<git::GitStatus, String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config.notes_folder.clone()
     };
 
@@ -31,7 +34,10 @@ pub(crate) async fn git_get_status(state: State<'_, AppState>) -> Result<git::Gi
 #[tauri::command]
 pub(crate) async fn git_init_repo(state: State<'_, AppState>) -> Result<(), String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config
             .notes_folder
             .clone()
@@ -65,7 +71,10 @@ pub(crate) async fn git_commit(
     }
 
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config.notes_folder.clone()
     };
 
@@ -86,7 +95,10 @@ pub(crate) async fn git_commit(
 #[tauri::command]
 pub(crate) async fn git_push(state: State<'_, AppState>) -> Result<git::GitResult, String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config.notes_folder.clone()
     };
 
@@ -105,7 +117,10 @@ pub(crate) async fn git_push(state: State<'_, AppState>) -> Result<git::GitResul
 #[tauri::command]
 pub(crate) async fn git_fetch(state: State<'_, AppState>) -> Result<git::GitResult, String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config.notes_folder.clone()
     };
 
@@ -126,7 +141,10 @@ pub(crate) async fn git_fetch(state: State<'_, AppState>) -> Result<git::GitResu
 #[tauri::command]
 pub(crate) async fn git_pull(state: State<'_, AppState>) -> Result<git::GitResult, String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config.notes_folder.clone()
     };
 
@@ -148,7 +166,10 @@ pub(crate) async fn git_add_remote(
     state: State<'_, AppState>,
 ) -> Result<git::GitResult, String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config.notes_folder.clone()
     };
 
@@ -171,7 +192,10 @@ pub(crate) async fn git_push_with_upstream(
     state: State<'_, AppState>,
 ) -> Result<git::GitResult, String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config.notes_folder.clone()
     };
 

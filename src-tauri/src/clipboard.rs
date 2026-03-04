@@ -22,7 +22,10 @@ pub(crate) async fn save_clipboard_image(
     }
 
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config
             .notes_folder
             .clone()
@@ -70,7 +73,10 @@ pub(crate) async fn copy_image_to_assets(
     state: State<'_, AppState>,
 ) -> Result<String, String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config
             .notes_folder
             .clone()

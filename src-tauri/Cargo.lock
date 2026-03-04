@@ -10,6 +10,7 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "notify",
+ "once_cell",
  "open",
  "regex",
  "serde",

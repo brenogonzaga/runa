@@ -29,7 +29,14 @@ pub(crate) fn setup_file_watcher(
 
                     // Debounce with cleanup
                     {
-                        let mut map = debounce_map.lock().expect("debounce map mutex");
+                        // Safe lock acquisition - skip event if lock fails
+                        let mut map = match debounce_map.lock() {
+                            Ok(m) => m,
+                            Err(e) => {
+                                eprintln!("Watcher: Failed to acquire debounce map lock: {}", e);
+                                continue;
+                            }
+                        };
                         let now = Instant::now();
 
                         if map.len() > 100 {
@@ -56,35 +63,37 @@ pub(crate) fn setup_file_watcher(
 
                     // Update search index for external file changes
                     if let Some(state) = app_handle.try_state::<AppState>() {
-                        let index = state.search_index.lock().expect("search index mutex");
-                        if let Some(ref search_index) = *index {
-                            match kind {
-                                "created" | "modified" => match std::fs::read_to_string(path) {
-                                    Ok(content) => {
-                                        let title = extract_title(&content);
-                                        let modified = std::fs::metadata(path)
-                                            .ok()
-                                            .and_then(|m| m.modified().ok())
-                                            .and_then(|t| {
-                                                t.duration_since(std::time::UNIX_EPOCH).ok()
-                                            })
-                                            .map(|d| d.as_secs() as i64)
-                                            .unwrap_or(0);
-                                        let _ = search_index
-                                            .index_note(&note_id, &title, &content, modified);
-                                    }
-                                    Err(_) => {
-                                        if !path.exists() {
-                                            let _ = search_index.delete_note(&note_id);
+                        // Safe lock acquisition - skip indexing if lock fails
+                        if let Ok(index) = state.search_index.lock() {
+                            if let Some(ref search_index) = *index {
+                                match kind {
+                                    "created" | "modified" => match std::fs::read_to_string(path) {
+                                        Ok(content) => {
+                                            let title = extract_title(&content);
+                                            let modified = std::fs::metadata(path)
+                                                .ok()
+                                                .and_then(|m| m.modified().ok())
+                                                .and_then(|t| {
+                                                    t.duration_since(std::time::UNIX_EPOCH).ok()
+                                                })
+                                                .map(|d| d.as_secs() as i64)
+                                                .unwrap_or(0);
+                                            let _ = search_index
+                                                .index_note(&note_id, &title, &content, modified);
                                         }
+                                        Err(_) => {
+                                            if !path.exists() {
+                                                let _ = search_index.delete_note(&note_id);
+                                            }
+                                        }
+                                    },
+                                    "deleted" => {
+                                        let _ = search_index.delete_note(&note_id);
                                     }
-                                },
-                                "deleted" => {
-                                    let _ = search_index.delete_note(&note_id);
+                                    _ => {}
                                 }
-                                _ => {}
                             }
-                        }
+                        } // Close the if let Ok(index) block
                     }
 
                     let effective_kind = if kind == "modified" && !path.exists() {
@@ -119,7 +128,11 @@ pub(crate) fn setup_file_watcher(
 #[tauri::command]
 pub(crate) fn start_file_watcher(app: AppHandle, state: State<AppState>) -> Result<(), String> {
     let folder = {
-        let app_config = state.app_config.read().expect("app_config read lock");
+        // Safe read lock acquisition
+        let app_config = state
+            .app_config
+            .read()
+            .map_err(|e| format!("Failed to read app config: {}", e))?;
         app_config
             .notes_folder
             .clone()
@@ -130,7 +143,11 @@ pub(crate) fn start_file_watcher(app: AppHandle, state: State<AppState>) -> Resu
 
     let watcher_state = setup_file_watcher(app, &folder, Arc::clone(&state.debounce_map))?;
 
-    let mut file_watcher = state.file_watcher.lock().expect("file watcher mutex");
+    // Safe lock acquisition
+    let mut file_watcher = state
+        .file_watcher
+        .lock()
+        .map_err(|e| format!("Failed to acquire file watcher lock: {}", e))?;
     *file_watcher = Some(watcher_state);
 
     Ok(())

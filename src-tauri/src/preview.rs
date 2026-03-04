@@ -15,9 +15,8 @@ pub(crate) fn try_select_in_notes_folder(app: &AppHandle, path: &Path) -> bool {
     let notes_folder = state
         .app_config
         .read()
-        .expect("app_config read lock")
-        .notes_folder
-        .clone();
+        .ok() // Use .ok() instead of .expect() to avoid panic on poisoned lock
+        .and_then(|config| config.notes_folder.clone());
 
     let folder = match notes_folder {
         Some(f) => f,

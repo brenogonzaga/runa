@@ -10,6 +10,8 @@ mod git_commands;
 mod notes;
 #[cfg(desktop)]
 mod preview;
+#[cfg(desktop)]
+mod rate_limit;
 mod search;
 mod state;
 mod types;
@@ -121,11 +123,33 @@ pub fn run() {
                 .state::<AppState>()
                 .app_config
                 .read()
-                .expect("app_config read lock")
-                .notes_folder
-                .clone()
+                .ok() // Use .ok() instead of .expect() to avoid panic
+                .and_then(|config| config.notes_folder.clone())
             {
                 let _ = app.asset_protocol_scope().allow_directory(folder, true);
+
+                // Security: Explicitly deny access to sensitive directories
+                #[cfg(desktop)]
+                {
+                    let sensitive_dirs = [
+                        ".ssh",
+                        ".aws",
+                        ".gnupg",
+                        ".docker",
+                        "Library/Keychains",
+                        "AppData/Roaming",
+                    ];
+                    if let Ok(home) = std::env::var("HOME") {
+                        for dir in sensitive_dirs {
+                            let sensitive_path = PathBuf::from(&home).join(dir);
+                            if sensitive_path.exists() {
+                                let _ = app
+                                    .asset_protocol_scope()
+                                    .forbid_directory(sensitive_path, true);
+                            }
+                        }
+                    }
+                }
             }
 
             // Handle CLI args on first launch (desktop only)
@@ -201,7 +225,7 @@ pub fn run() {
             preview::open_file_preview,
         ])
         .build(tauri::generate_context!())
-        .expect("error while building tauri application");
+        .expect("Fatal: Failed to build Tauri application");
 
     // Use .run() callback to handle macOS "Open With" file events
     app.run(|_app_handle, _event| {
