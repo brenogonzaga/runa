@@ -1,6 +1,6 @@
 [package]
 name = "Runa"
-version = "0.1.1"
+version = "0.1.2"
 description = "An offline markdown-based notes app"
 authors = ["brenogonzaga"]
 edition = "2021"
