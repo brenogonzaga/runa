@@ -123,7 +123,7 @@ export function Sidebar({ onOpenSettings, onNoteClick }: SidebarProps) {
       {/* Drag region with header: macOS traffic-light space on desktop, safe-area inset on mobile */}
       <div
         className={cn(
-          "flex items-center justify-between pt-safe md:pt-0 min-h-12 md:h-11 pb-2 border-b border-border shrink-0",
+          "flex items-center justify-between pt-safe md:pt-0 min-h-12 md:h-11 border-b border-border shrink-0",
           isMacDesktop ? "pl-22 pr-3" : "pl-4 pr-3",
         )}
         data-tauri-drag-region
