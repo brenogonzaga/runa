@@ -12,9 +12,7 @@ pub(crate) async fn git_is_available() -> bool {
 }
 
 #[tauri::command]
-pub(crate) async fn git_get_status(
-    state: State<'_, AppState>,
-) -> Result<git::GitStatus, String> {
+pub(crate) async fn git_get_status(state: State<'_, AppState>) -> Result<git::GitStatus, String> {
     let folder = {
         let app_config = state.app_config.read().expect("app_config read lock");
         app_config.notes_folder.clone()
@@ -50,6 +48,22 @@ pub(crate) async fn git_commit(
     message: String,
     state: State<'_, AppState>,
 ) -> Result<git::GitResult, String> {
+    // Validate commit message length to prevent DoS
+    if message.is_empty() {
+        return Ok(git::GitResult {
+            success: false,
+            message: None,
+            error: Some("Commit message cannot be empty".to_string()),
+        });
+    }
+    if message.len() > 5000 {
+        return Ok(git::GitResult {
+            success: false,
+            message: None,
+            error: Some("Commit message is too long (max 5000 characters)".to_string()),
+        });
+    }
+
     let folder = {
         let app_config = state.app_config.read().expect("app_config read lock");
         app_config.notes_folder.clone()
@@ -162,21 +176,19 @@ pub(crate) async fn git_push_with_upstream(
     };
 
     match folder {
-        Some(path) => {
-            tauri::async_runtime::spawn_blocking(move || {
-                let status = git::get_status(&PathBuf::from(&path));
-                match status.current_branch {
-                    Some(branch) => git::push_with_upstream(&PathBuf::from(&path), &branch),
-                    None => git::GitResult {
-                        success: false,
-                        message: None,
-                        error: Some("No current branch found".to_string()),
-                    },
-                }
-            })
-            .await
-            .map_err(|e| e.to_string())
-        }
+        Some(path) => tauri::async_runtime::spawn_blocking(move || {
+            let status = git::get_status(&PathBuf::from(&path));
+            match status.current_branch {
+                Some(branch) => git::push_with_upstream(&PathBuf::from(&path), &branch),
+                None => git::GitResult {
+                    success: false,
+                    message: None,
+                    error: Some("No current branch found".to_string()),
+                },
+            }
+        })
+        .await
+        .map_err(|e| e.to_string()),
         None => Ok(git::GitResult {
             success: false,
             message: None,

@@ -32,7 +32,6 @@
                 "scope": {
                     "requireLiteralLeadingDot": true,
                     "allow": [
-                        "$APPDATA/**",
                         "$HOME/**"
                     ]
                 }

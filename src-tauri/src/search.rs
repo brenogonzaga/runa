@@ -10,7 +10,9 @@ use tauri::{AppHandle, State};
 use crate::config::get_search_index_path;
 use crate::state::AppState;
 use crate::types::SearchResult;
-use crate::utils::{abs_path_from_id, extract_title, generate_preview, id_from_abs_path, is_visible_notes_entry};
+use crate::utils::{
+    abs_path_from_id, extract_title, generate_preview, id_from_abs_path, is_visible_notes_entry,
+};
 
 // Tantivy search index state
 pub struct SearchIndex {
@@ -191,9 +193,11 @@ pub(crate) async fn search_notes(
 
     let indexed_result = {
         let index = state.search_index.lock().expect("search index mutex");
-        (*index)
-            .as_ref()
-            .map(|search_index| search_index.search(&trimmed_query, 20).map_err(|e| e.to_string()))
+        (*index).as_ref().map(|search_index| {
+            search_index
+                .search(&trimmed_query, 20)
+                .map_err(|e| e.to_string())
+        })
     };
 
     match indexed_result {
@@ -289,10 +293,7 @@ async fn fallback_search(
 }
 
 #[tauri::command]
-pub(crate) fn rebuild_search_index(
-    app: AppHandle,
-    state: State<AppState>,
-) -> Result<(), String> {
+pub(crate) fn rebuild_search_index(app: AppHandle, state: State<AppState>) -> Result<(), String> {
     let folder = {
         let app_config = state.app_config.read().expect("app_config read lock");
         app_config

@@ -10,7 +10,7 @@ pub struct GitStatus {
     pub has_upstream: bool, // Whether the current branch tracks an upstream
     pub remote_url: Option<String>, // URL of the 'origin' remote
     pub changed_count: usize,
-    pub ahead_count: i32, // -1 if no upstream tracking
+    pub ahead_count: i32,  // -1 if no upstream tracking
     pub behind_count: i32, // -1 if no upstream tracking
     pub current_branch: Option<String>,
     pub error: Option<String>,
@@ -86,8 +86,8 @@ pub fn get_status(path: &Path) -> GitStatus {
         .current_dir(path)
         .output()
     {
-        status.has_remote = output.status.success()
-            && !String::from_utf8_lossy(&output.stdout).trim().is_empty();
+        status.has_remote =
+            output.status.success() && !String::from_utf8_lossy(&output.stdout).trim().is_empty();
 
         // Get remote URL if remote exists
         if status.has_remote {
@@ -173,7 +173,11 @@ pub fn commit_all(path: &Path, message: &str) -> GitResult {
             error: Some(format!(
                 "Failed to stage changes: {}{}",
                 stderr,
-                if stdout.is_empty() { String::new() } else { format!("\n{}", stdout) }
+                if stdout.is_empty() {
+                    String::new()
+                } else {
+                    format!("\n{}", stdout)
+                }
             )),
         };
     }
@@ -221,7 +225,13 @@ pub fn commit_all(path: &Path, message: &str) -> GitResult {
 /// Push to remote
 pub fn push(path: &Path) -> GitResult {
     let output = Command::new("git")
-        .args(["-c", "http.lowSpeedLimit=1000", "-c", "http.lowSpeedTime=10", "push"])
+        .args([
+            "-c",
+            "http.lowSpeedLimit=1000",
+            "-c",
+            "http.lowSpeedTime=10",
+            "push",
+        ])
         .env("GIT_SSH_COMMAND", "ssh -o ConnectTimeout=10")
         .current_dir(path)
         .output();
@@ -253,7 +263,14 @@ pub fn push(path: &Path) -> GitResult {
 /// Fetch from remote to update tracking refs
 pub fn fetch(path: &Path) -> GitResult {
     let output = Command::new("git")
-        .args(["-c", "http.lowSpeedLimit=1000", "-c", "http.lowSpeedTime=10", "fetch", "--quiet"])
+        .args([
+            "-c",
+            "http.lowSpeedLimit=1000",
+            "-c",
+            "http.lowSpeedTime=10",
+            "fetch",
+            "--quiet",
+        ])
         .env("GIT_SSH_COMMAND", "ssh -o ConnectTimeout=10")
         .current_dir(path)
         .output();
@@ -285,7 +302,15 @@ pub fn fetch(path: &Path) -> GitResult {
 /// Pull from remote
 pub fn pull(path: &Path) -> GitResult {
     let output = Command::new("git")
-        .args(["-c", "http.lowSpeedLimit=1000", "-c", "http.lowSpeedTime=10", "-c", "pull.rebase=false", "pull"])
+        .args([
+            "-c",
+            "http.lowSpeedLimit=1000",
+            "-c",
+            "http.lowSpeedTime=10",
+            "-c",
+            "pull.rebase=false",
+            "pull",
+        ])
         .env("GIT_SSH_COMMAND", "ssh -o ConnectTimeout=10")
         .current_dir(path)
         .output();
@@ -344,7 +369,10 @@ pub fn add_remote(path: &Path, url: &str) -> GitResult {
         return GitResult {
             success: false,
             message: None,
-            error: Some("Invalid remote URL format. URL must start with https://, http://, or git@".to_string()),
+            error: Some(
+                "Invalid remote URL format. URL must start with https://, http://, or git@"
+                    .to_string(),
+            ),
         };
     }
 
@@ -389,8 +417,28 @@ pub fn add_remote(path: &Path, url: &str) -> GitResult {
 
 /// Push to remote and set upstream tracking (git push -u origin <branch>)
 pub fn push_with_upstream(path: &Path, branch: &str) -> GitResult {
+    if !branch
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == '/' || c == '-' || c == '_' || c == '.')
+    {
+        return GitResult {
+            success: false,
+            message: None,
+            error: Some("Invalid branch name".to_string()),
+        };
+    }
+
     let output = Command::new("git")
-        .args(["-c", "http.lowSpeedLimit=1000", "-c", "http.lowSpeedTime=10", "push", "-u", "origin", branch])
+        .args([
+            "-c",
+            "http.lowSpeedLimit=1000",
+            "-c",
+            "http.lowSpeedTime=10",
+            "push",
+            "-u",
+            "origin",
+            branch,
+        ])
         .env("GIT_SSH_COMMAND", "ssh -o ConnectTimeout=10")
         .current_dir(path)
         .output();
@@ -448,7 +496,8 @@ fn parse_pull_error(stderr: &str) -> String {
     } else if stderr.contains("CONFLICT") || stderr.contains("Merge conflict") {
         "Pull failed due to merge conflicts. Resolve conflicts manually.".to_string()
     } else if stderr.contains("not possible to fast-forward") {
-        "Pull failed: local and remote have diverged. Try pulling with rebase or merging manually.".to_string()
+        "Pull failed: local and remote have diverged. Try pulling with rebase or merging manually."
+            .to_string()
     } else if stderr.contains("unrelated histories") {
         "Pull failed: repositories have unrelated histories. Merge them manually or re-run with --allow-unrelated-histories.".to_string()
     } else {

@@ -491,7 +491,7 @@ pub(crate) fn update_settings(
 pub(crate) async fn write_file(path: String, contents: Vec<u8>) -> Result<(), String> {
     fs::write(&path, contents)
         .await
-        .map_err(|e| format!("Failed to write file: {}", e))
+        .map_err(|_| "Failed to write file".to_string())
 }
 
 #[tauri::command]
@@ -518,7 +518,7 @@ pub(crate) async fn read_file_direct(path: String) -> Result<FileContent, String
 
     let content = fs::read_to_string(&canonical)
         .await
-        .map_err(|e| format!("Failed to read file: {}", e))?;
+        .map_err(|_| "Failed to read file".to_string())?;
     let metadata = fs::metadata(&canonical)
         .await
         .map_err(|e| format!("Failed to read metadata: {}", e))?;
@@ -550,7 +550,7 @@ pub(crate) async fn save_file_direct(path: String, content: String) -> Result<Fi
 
     fs::write(&canonical, &content)
         .await
-        .map_err(|e| format!("Failed to write file: {}", e))?;
+        .map_err(|_| "Failed to write file".to_string())?;
 
     let metadata = fs::metadata(&canonical)
         .await
@@ -594,7 +594,7 @@ pub(crate) async fn import_file_to_folder(
 
     let content = fs::read_to_string(&source)
         .await
-        .map_err(|e| format!("Failed to read source file: {}", e))?;
+        .map_err(|_| "Failed to read source file".to_string())?;
 
     let extracted_title = extract_title(&content);
     let base_name = if extracted_title.trim().is_empty() {
@@ -619,9 +619,9 @@ pub(crate) async fn import_file_to_folder(
             .await
         {
             Ok(mut file) => {
-                if let Err(e) = file.write_all(content.as_bytes()).await {
+                if file.write_all(content.as_bytes()).await.is_err() {
                     let _ = fs::remove_file(&candidate).await;
-                    return Err(format!("Failed to write file: {}", e));
+                    return Err("Failed to write file".to_string());
                 }
                 break;
             }

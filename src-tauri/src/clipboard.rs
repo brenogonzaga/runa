@@ -59,7 +59,7 @@ pub(crate) async fn save_clipboard_image(
 
     fs::write(&target_path, &image_data)
         .await
-        .map_err(|e| format!("Failed to write image: {}", e))?;
+        .map_err(|_| "Failed to write image".to_string())?;
 
     Ok(format!("assets/{}", target_name))
 }
@@ -87,6 +87,15 @@ pub(crate) async fn copy_image_to_assets(
         .and_then(|e| e.to_str())
         .ok_or("Invalid file extension")?;
 
+    // Validate that the file is an image (prevent exfiltration of arbitrary files)
+    let allowed_extensions = [
+        "jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tiff", "tif", "ico", "avif",
+    ];
+
+    if !allowed_extensions.contains(&extension.to_lowercase().as_str()) {
+        return Err("File type not allowed. Only image files can be copied.".to_string());
+    }
+
     let original_name = source
         .file_stem()
         .and_then(|n| n.to_str())
@@ -111,7 +120,7 @@ pub(crate) async fn copy_image_to_assets(
 
     fs::copy(&source, &target_path)
         .await
-        .map_err(|e| format!("Failed to copy image: {}", e))?;
+        .map_err(|_| "Failed to copy image".to_string())?;
 
     Ok(format!("assets/{}", target_name))
 }

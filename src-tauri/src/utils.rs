@@ -121,7 +121,7 @@ pub(crate) fn is_markdown_extension(path: &Path) -> bool {
 pub(crate) fn sanitize_filename(title: &str) -> String {
     let sanitized: String = title
         .chars()
-        .filter(|c| *c != '\u{00A0}' && *c != '\u{FEFF}')
+        .filter(|c| *c != '\u{00A0}' && *c != '\u{FEFF}' && *c != '\0')
         .map(|c| match c {
             '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '-',
             _ => c,

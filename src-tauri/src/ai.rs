@@ -1,6 +1,11 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
-use crate::types::AiExecutionResult;
+use tauri::State;
+
+use crate::{state::AppState, types::AiExecutionResult};
 
 pub(crate) fn get_expanded_path() -> String {
     let system_path = std::env::var("PATH").unwrap_or_default();
@@ -270,12 +275,44 @@ async fn execute_ai_cli(
 pub(crate) async fn ai_execute_claude(
     file_path: String,
     prompt: String,
+    state: tauri::State<'_, AppState>,
 ) -> Result<AiExecutionResult, String> {
+    let path = PathBuf::from(&file_path);
+    let extension = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|s| s.to_lowercase());
+
+    match extension.as_deref() {
+        Some("md") | Some("markdown") => {}
+        _ => return Err("AI editing is only allowed on markdown files".to_string()),
+    }
+
+    let folder = {
+        let app_config = state.app_config.read().expect("app_config read lock");
+        app_config
+            .notes_folder
+            .clone()
+            .ok_or("Notes folder not set")?
+    };
+
+    let notes_folder = PathBuf::from(&folder)
+        .canonicalize()
+        .map_err(|_| "Failed to resolve notes folder path".to_string())?;
+
+    let canonical_file = path
+        .canonicalize()
+        .map_err(|_| "Failed to resolve file path".to_string())?;
+
+    if !canonical_file.starts_with(&notes_folder) {
+        return Err("AI editing is only allowed on files within the notes folder".to_string());
+    }
+
     execute_ai_cli(
         "Claude",
         "claude".to_string(),
         vec![
-            file_path,
+            canonical_file.to_string_lossy().to_string(),
             "--dangerously-skip-permissions".to_string(),
             "--print".to_string(),
         ],
@@ -289,9 +326,44 @@ pub(crate) async fn ai_execute_claude(
 pub(crate) async fn ai_execute_codex(
     file_path: String,
     prompt: String,
+    state: State<'_, AppState>,
 ) -> Result<AiExecutionResult, String> {
+    // Validate file extension
+    let path = PathBuf::from(&file_path);
+    let extension = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|s| s.to_lowercase());
+
+    match extension.as_deref() {
+        Some("md") | Some("markdown") => {}
+        _ => return Err("AI editing is only allowed on markdown files".to_string()),
+    }
+
+    // Validate path is within notes folder
+    let folder = {
+        let app_config = state.app_config.read().expect("app_config read lock");
+        app_config
+            .notes_folder
+            .clone()
+            .ok_or("Notes folder not set")?
+    };
+
+    let notes_folder = PathBuf::from(&folder)
+        .canonicalize()
+        .map_err(|_| "Failed to resolve notes folder path".to_string())?;
+
+    let canonical_file = path
+        .canonicalize()
+        .map_err(|_| "Failed to resolve file path".to_string())?;
+
+    if !canonical_file.starts_with(&notes_folder) {
+        return Err("AI editing is only allowed on files within the notes folder".to_string());
+    }
+
+    let canonical_path_str = canonical_file.to_string_lossy().to_string();
     let stdin_input = format!(
-        "Edit only this markdown file: {file_path}\n\
+        "Edit only this markdown file: {canonical_path_str}\n\
          Apply the user's instructions below directly to that file.\n\
          Do not create, delete, rename, or modify any other files.\n\
          User instructions:\n\
